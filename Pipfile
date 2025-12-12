@@ -1,0 +1,25 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+video-compositing-renderer = {file = ".", editable = true}
+
+[dev-packages]
+pytest = "*"
+coverage = "*"
+pytest-cov = "*"
+black = "*"
+invoke = "*"
+mypy = "*"
+asynctest = "*"
+pytest-asyncio = "*"
+pylint = "*"
+pyflakes = "*"
+semver = "*"
+changelog-cli = "*"
+build = "*"
+
+[requires]
+python_version = "3.12"

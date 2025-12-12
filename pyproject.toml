@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "video-compositing-renderer"
+authors = [
+    {name="Author Name", email="author.name@email.com"},
+]
+description = ""
+classifiers=[
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = []
+optional-dependencies.dev = [] 
+dynamic = ["version"]
+
+[project.urls]
+Repository = "http://project.url"
+
+[tool.setuptools]
+ext-modules = [
+    {name = "vcr._libvcr", sources = ["c/_libvcr.c"]}
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.dynamic]
+version = {attr = "vcr.__version__"}
+
+[tool.black]
+line-length = 120
+target_version = ["py310", "py312"]
+
+[tool.pylint]
+disable = ["W0107,R0903"]
+max-line-length = 120
+extension-pkg-allow-list = ["vcr._libvcr"]
+
+[tool.mypy]
+namespace_packages = true
+disallow_untyped_defs = true
+
+[tool.pylint.main]
+ignored-modules = [
+    "clr",
+]
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = "vcr._libvcr"
