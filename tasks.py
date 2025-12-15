@@ -23,7 +23,7 @@ def fmt(context: Context) -> None:
     """Formats Python code with black."""
 
     clang_style = '"{BasedOnStyle: llvm, IndentWidth: 4, ColumnLimit: 120}"'
-    context.run(f"clang-format --style={clang_style} -i c/*.c ")
+    context.run(f"clang-format --style={clang_style} -i c/*.[ch] ", echo=True, pty=USE_PTY)
     context.run("black --verbose .", echo=True, pty=USE_PTY)
 
 
