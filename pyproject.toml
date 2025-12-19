@@ -19,11 +19,6 @@ dynamic = ["version"]
 [project.urls]
 Repository = "http://project.url"
 
-[[tool.setuptools.ext-modules]]
-name = "vcr._libvcr"
-sources = ["c/_libvcr.c"]
-libraries = ["mpv", "SDL2"]
-
 [tool.setuptools.packages.find]
 where = ["src"]
 
