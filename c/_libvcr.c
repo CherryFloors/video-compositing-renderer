@@ -2,7 +2,7 @@
 #include <python3.12/longobject.h>
 #include <python3.12/unicodeobject.h>
 
-#include "ProgrammingQueue.c"
+#include "programming_queue.c"
 
 ProgrammingQueue programming_queue;
 
@@ -28,6 +28,7 @@ static PyObject *_enqueue_program(PyObject *self, PyObject *args) {
     return PyLong_FromLong(enqueue(&programming_queue, &program));
 }
 
+#ifdef DEBUG
 static PyObject *_test_dequeue_program(PyObject *self, PyObject *args) {
     Program program;
     if (dequeue(&programming_queue, &program)) {
@@ -36,12 +37,15 @@ static PyObject *_test_dequeue_program(PyObject *self, PyObject *args) {
 
     return PyUnicode_DecodeASCII("", strlen(""), "strict");
 }
+#endif
 
 static PyMethodDef libvcrmethods[] = {
     {"_queue_count", _queue_count, METH_NOARGS, "Check the current Program Queue Count."},
     {"_clear_queue", _clear_queue, METH_NOARGS, "Clear the Program Queue."},
     {"_enqueue_program", _enqueue_program, METH_VARARGS, "Add a program to the queue if there is room."},
+#ifdef DEBUG
     {"_test_dequeue_program", _test_dequeue_program, METH_VARARGS, "Add a program to the queue if there is room."},
+#endif
     {NULL, NULL, 0, NULL},
 };
 

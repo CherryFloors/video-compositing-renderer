@@ -19,10 +19,18 @@ def build(context: Context) -> None:
 
 
 @invoke.task
+def debug_build(context: Context) -> None:
+    """Builds the package in debug mode locally"""
+
+    cmd = "DEBUG=1 pip install -e ."
+    context.run(cmd, echo=True, pty=USE_PTY)
+
+
+@invoke.task
 def fmt(context: Context) -> None:
     """Formats Python code with black."""
 
-    clang_style = '"{BasedOnStyle: llvm, IndentWidth: 4, ColumnLimit: 120}"'
+    clang_style = '"{BasedOnStyle: llvm, IndentWidth: 4, ColumnLimit: 120, AlignAfterOpenBracket: true}"'
     context.run(f"clang-format --style={clang_style} -i c/*.[ch] ", echo=True, pty=USE_PTY)
     context.run("black --verbose .", echo=True, pty=USE_PTY)
 

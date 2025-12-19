@@ -20,6 +20,7 @@ pyflakes = "*"
 semver = "*"
 changelog-cli = "*"
 build = "*"
+setuptools = "*"
 
 [requires]
 python_version = "3.12"
