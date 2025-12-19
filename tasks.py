@@ -93,3 +93,11 @@ def set_version(context: Context) -> None:
     contents[version_line] = f'__version__ = "{__version__}"'
     dunderinitpy.write_text("\n".join(contents) + "\n")
     print(f"Version set to '{__version__}' in '{dunderinitpy}'")
+
+
+@invoke.task
+def debug_run(context: Context) -> None:
+    """Runs a debug window."""
+    from vcr._libvcr import open_display_window
+
+    print(f"{open_display_window()=}")
