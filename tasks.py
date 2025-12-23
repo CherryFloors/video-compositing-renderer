@@ -101,3 +101,15 @@ def debug_run(context: Context) -> None:
     from vcr._libvcr import open_display_window
 
     print(f"{open_display_window()=}")
+
+
+@invoke.task
+def run_dev(context: Context) -> None:
+    """compile and run the dev exe"""
+
+    devrun = Path("build/rundev")
+    devrun.parent.mkdir(exist_ok=True)
+
+    flags = "-Wall `pkg-config --libs --cflags mpv sdl2` -lSDL2_ttf -lSDL2_image"
+    context.run(f"gcc -o {devrun} c/rundev.c {flags} -std=c99", echo=True, pty=USE_PTY)
+    context.run(f"{devrun}", echo=True, pty=USE_PTY)
