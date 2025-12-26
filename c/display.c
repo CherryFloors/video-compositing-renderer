@@ -17,7 +17,7 @@ SDL_Window *window;
 SDL_Texture *text_texture;
 TTF_Font *font;
 
-typedef struct VcrColorPallete {
+typedef struct VcrColorPalette {
     SDL_Color c0;
     SDL_Color c1;
     SDL_Color c2;
@@ -25,18 +25,25 @@ typedef struct VcrColorPallete {
     SDL_Color c4;
     SDL_Color text_fg;
     SDL_Color text_bg;
-} VcrColorPallete;
+} VcrColorPalette;
 
-VcrColorPallete default_color_pallete(void) {
-    VcrColorPallete vcr_color_pallete = {
+VcrColorPalette default_color_palette(void) {
+    VcrColorPalette vcr_color_palette = {
         {0xFD, 0xC3, 0x31}, {0xFE, 0x57, 0x22}, {0xF0, 0x35, 0x3C}, {0xB4, 0x21, 0x3D},
         {0x67, 0x1C, 0x3B}, {0xFF, 0xFF, 0xFF}, {0x1A, 0x1A, 0x1A},
     };
-    return vcr_color_pallete;
+    return vcr_color_palette;
 }
 
-void standby_screen(SDL_Renderer *renderer) {
-    VcrColorPallete colors = default_color_pallete();
+VcrColorPalette supercolor_palette(void) {
+    VcrColorPalette vcr_color_palette = {
+        {0x03, 0x8D, 0xAE}, {0x8E, 0xA4, 0x3B}, {0xE9, 0xBD, 0x01}, {0xF2, 0x47, 0x01},
+        {0xF8, 0x01, 0x50}, {0xE8, 0xE1, 0xD6}, {0x18, 0x18, 0x18},
+    };
+    return vcr_color_palette;
+}
+
+void standby_screen(SDL_Renderer *renderer, VcrColorPalette colors) {
     SDL_SetRenderDrawColor(renderer, colors.text_fg.r, colors.text_fg.g, colors.text_fg.b, 255);
     SDL_RenderClear(renderer);
 
@@ -124,7 +131,7 @@ bool handle_event(SDL_Event *event, SDL_Renderer *renderer) {
         SDL_RenderClear(renderer);
 
         if (event->key.keysym.sym == SDLK_s) {
-            standby_screen(renderer);
+            standby_screen(renderer, supercolor_palette());
         }
 
         break;
@@ -164,7 +171,7 @@ int run_display_loop(void) {
     window = SDL_CreateWindow("vcr display", window_x_pos, window_y_pos, 640, 480, SDL_WINDOW_BORDERLESS);
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
 
-    standby_screen(renderer);
+    standby_screen(renderer, default_color_palette());
     while (true) {
         SDL_Event Event;
         SDL_WaitEvent(&Event);
