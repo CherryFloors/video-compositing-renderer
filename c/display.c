@@ -260,7 +260,7 @@ int run_display_loop(void) {
         printf("Failed to open font\n");
     }
     smallfont = TTF_OpenFont("/usr/share/fonts/truetype/dseg/DSEG14Classic-Regular.ttf", 24);
-    alphafont = TTF_OpenFont("/usr/share/fonts/truetype/ubuntu/UbuntuMono-R.ttf", 24);
+    alphafont = TTF_OpenFont("/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf", 24);
 
     int window_x_pos = SDL_WINDOWPOS_UNDEFINED;
     int window_y_pos = SDL_WINDOWPOS_UNDEFINED;
