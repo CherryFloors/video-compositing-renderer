@@ -55,7 +55,7 @@ void render_videoscreen(SDL_Renderer *renderer, SDL_Rect screen) {
     int alpha_decay = shadow_alpha / shadow_size;
 
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-    for (int i = 0; i<shadow_size; i++) {
+    for (int i = 0; i < shadow_size; i++) {
         shadow.x -= 1;
         shadow.y -= 1;
         shadow.w += 2;
@@ -75,12 +75,12 @@ void draw_standby_digital_display(SDL_Renderer *renderer, int x, int y, int w, i
     TTF_SetFontOutline(font, outw);
     TTF_SetFontOutline(alphafont, outw);
 
-    SDL_Color display_bg                  = {0x00, 0x00, 0x00};
-    SDL_Color solid_text_color            = {0x1A, 0xFD, 0xD7};
-    SDL_Color active_text_outline_color   = {solid_text_color.r, solid_text_color.g, solid_text_color.b, 120};
-    SDL_Color active_text_center_color    = {0xBD, 0xFF, 0xFD};
+    SDL_Color display_bg = {0x00, 0x00, 0x00};
+    SDL_Color solid_text_color = {0x1A, 0xFD, 0xD7};
+    SDL_Color active_text_outline_color = {solid_text_color.r, solid_text_color.g, solid_text_color.b, 120};
+    SDL_Color active_text_center_color = {0xBD, 0xFF, 0xFD};
     SDL_Color inactive_text_outline_color = {0x3A, 0x3A, 0x3A};
-    SDL_Color inactive_text_center_color  = {0x25, 0x25, 0x25};
+    SDL_Color inactive_text_center_color = {0x25, 0x25, 0x25};
 
     SDL_Surface *ampm = TTF_RenderText_Blended(alphafont, " PM", active_text_outline_color);
     SDL_Surface *inactive_surface = TTF_RenderText_Blended(font, "8888888:88", inactive_text_outline_color);
@@ -96,8 +96,8 @@ void draw_standby_digital_display(SDL_Renderer *renderer, int x, int y, int w, i
     SDL_Rect background = {x, y, w + ampm->w, inactive_surface->h + padding};
     SDL_Rect text_box = {x + padding / 2, y + padding / 2, inactive_surface->w, inactive_surface->h};
     SDL_Rect ampm_box = {text_box.x + text_box.w, (text_box.h - ampm->h) + text_box.y, ampm->w, ampm->h};
-    SDL_Rect centered_textbox = {text_box.x + outw, text_box.y + outw, inactive_surface_no_outline->w, inactive_surface_no_outline->h};
-
+    SDL_Rect centered_textbox = {text_box.x + outw, text_box.y + outw, inactive_surface_no_outline->w,
+                                 inactive_surface_no_outline->h};
 
     SDL_Texture *inactive_texture = SDL_CreateTextureFromSurface(renderer, inactive_surface);
     SDL_Texture *inactive_ampm = SDL_CreateTextureFromSurface(renderer, ampm);
