@@ -1,11 +1,13 @@
 #pragma once
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_blendmode.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_keyboard.h>
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_rect.h>
 #include <SDL2/SDL_render.h>
+#include <SDL2/SDL_stdinc.h>
 #include <SDL2/SDL_surface.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_video.h>
@@ -16,6 +18,8 @@
 SDL_Window *window;
 SDL_Texture *text_texture;
 TTF_Font *font;
+TTF_Font *smallfont;
+TTF_Font *alphafont;
 
 typedef struct VcrColorPalette {
     SDL_Color c0;
@@ -41,6 +45,100 @@ VcrColorPalette supercolor_palette(void) {
         {0xF8, 0x01, 0x50}, {0xE8, 0xE1, 0xD6}, {0x18, 0x18, 0x18},
     };
     return vcr_color_palette;
+}
+
+void render_videoscreen(SDL_Renderer *renderer, SDL_Rect screen) {
+
+    SDL_Rect shadow = screen;
+    int shadow_size = 5;
+    int shadow_alpha = 0xFF / 2;
+    int alpha_decay = shadow_alpha / shadow_size;
+
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    for (int i = 0; i<shadow_size; i++) {
+        shadow.x -= 1;
+        shadow.y -= 1;
+        shadow.w += 2;
+        shadow.h += 2;
+        shadow_alpha -= alpha_decay;
+        SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, shadow_alpha);
+        SDL_RenderDrawRect(renderer, &shadow);
+    }
+
+    SDL_SetRenderDrawColor(renderer, 0x1A, 0xFD, 0xD7, 0xFF);
+    SDL_RenderFillRect(renderer, &screen);
+}
+
+void draw_standby_digital_display(SDL_Renderer *renderer, int x, int y, int w, int h) {
+
+    int outw = 1;
+    TTF_SetFontOutline(font, outw);
+    TTF_SetFontOutline(alphafont, outw);
+
+    SDL_Color display_bg                  = {0x00, 0x00, 0x00};
+    SDL_Color solid_text_color            = {0x1A, 0xFD, 0xD7};
+    SDL_Color active_text_outline_color   = {solid_text_color.r, solid_text_color.g, solid_text_color.b, 120};
+    SDL_Color active_text_center_color    = {0xBD, 0xFF, 0xFD};
+    SDL_Color inactive_text_outline_color = {0x3A, 0x3A, 0x3A};
+    SDL_Color inactive_text_center_color  = {0x25, 0x25, 0x25};
+
+    SDL_Surface *ampm = TTF_RenderText_Blended(alphafont, " PM", active_text_outline_color);
+    SDL_Surface *inactive_surface = TTF_RenderText_Blended(font, "8888888:88", inactive_text_outline_color);
+    SDL_Surface *ampm_surf = TTF_RenderText_Blended(alphafont, " PM", active_text_center_color);
+    SDL_Surface *active_surface = TTF_RenderText_Blended(font, "VCR!!12:34", active_text_outline_color);
+    TTF_SetFontOutline(alphafont, 0);
+    TTF_SetFontOutline(font, 0);
+    SDL_Surface *active_surface_no_outline = TTF_RenderText_Blended(font, "VCR!!12:34", active_text_center_color);
+    SDL_Surface *inactive_surface_no_outline = TTF_RenderText_Blended(font, "8888888:88", inactive_text_center_color);
+
+    int padding = w - inactive_surface->w;
+    x = (640 - w + ampm->w + padding) / 2;
+    SDL_Rect background = {x, y, w + ampm->w, inactive_surface->h + padding};
+    SDL_Rect text_box = {x + padding / 2, y + padding / 2, inactive_surface->w, inactive_surface->h};
+    SDL_Rect ampm_box = {text_box.x + text_box.w, (text_box.h - ampm->h) + text_box.y, ampm->w, ampm->h};
+    SDL_Rect centered_textbox = {text_box.x + outw, text_box.y + outw, inactive_surface_no_outline->w, inactive_surface_no_outline->h};
+
+
+    SDL_Texture *inactive_texture = SDL_CreateTextureFromSurface(renderer, inactive_surface);
+    SDL_Texture *inactive_ampm = SDL_CreateTextureFromSurface(renderer, ampm);
+    SDL_Texture *active_ampm = SDL_CreateTextureFromSurface(renderer, ampm_surf);
+    SDL_Texture *active_texture = SDL_CreateTextureFromSurface(renderer, active_surface);
+    SDL_Texture *inactive_texture_no_outline = SDL_CreateTextureFromSurface(renderer, inactive_surface_no_outline);
+    SDL_Texture *active_texture_no_outline = SDL_CreateTextureFromSurface(renderer, active_surface_no_outline);
+
+    // display bg
+    SDL_SetRenderDrawColor(renderer, display_bg.r, display_bg.g, display_bg.b, 255);
+    SDL_RenderFillRect(renderer, &background);
+
+    // Render AMPM
+    SDL_RenderCopy(renderer, inactive_ampm, NULL, &ampm_box);
+    SDL_RenderCopy(renderer, active_ampm, NULL, &ampm_box);
+
+    // Render inactive
+    SDL_RenderCopy(renderer, inactive_texture_no_outline, NULL, &centered_textbox);
+    SDL_RenderCopy(renderer, inactive_texture, NULL, &text_box);
+
+    // Render active
+    SDL_RenderCopy(renderer, active_texture_no_outline, NULL, &centered_textbox);
+    SDL_RenderCopy(renderer, active_texture, NULL, &text_box);
+
+    // free surfaces and textures
+    SDL_FreeSurface(ampm);
+    SDL_FreeSurface(inactive_surface);
+    SDL_FreeSurface(ampm_surf);
+    SDL_FreeSurface(active_surface);
+    SDL_FreeSurface(active_surface_no_outline);
+    SDL_FreeSurface(inactive_surface_no_outline);
+    SDL_DestroyTexture(inactive_texture);
+    SDL_DestroyTexture(inactive_ampm);
+    SDL_DestroyTexture(active_ampm);
+    SDL_DestroyTexture(active_texture);
+    SDL_DestroyTexture(inactive_texture_no_outline);
+    SDL_DestroyTexture(active_texture_no_outline);
+
+    // Render Screen
+    SDL_Rect video_screen = {50, 50, 320, 240};
+    render_videoscreen(renderer, video_screen);
 }
 
 void standby_screen(SDL_Renderer *renderer, VcrColorPalette colors) {
@@ -70,6 +168,8 @@ void standby_screen(SDL_Renderer *renderer, VcrColorPalette colors) {
 
     SDL_SetRenderDrawColor(renderer, colors.c4.r, colors.c4.g, colors.c4.b, 255);
     SDL_RenderFillRect(renderer, &r4);
+
+    draw_standby_digital_display(renderer, 150, 300, 400, 50);
 
     SDL_RenderPresent(renderer);
     SDL_RenderClear(renderer);
@@ -112,9 +212,9 @@ bool handle_event(SDL_Event *event, SDL_Renderer *renderer) {
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             SDL_RenderClear(renderer);
             char text[50];
-            SDL_snprintf(text, sizeof(text), "I found this [%d]", event->key.keysym.sym);
+            SDL_snprintf(text, sizeof(text), "I found this (%d)", event->key.keysym.sym);
             SDL_Color foreground = {0x6E, 0xFB, 0x4C};
-            SDL_Surface *text_surface = TTF_RenderText_Solid(font, text, foreground);
+            SDL_Surface *text_surface = TTF_RenderText_Blended(smallfont, text, foreground);
 
             float scale = 640.0 / text_surface->w;
 
@@ -154,11 +254,13 @@ int run_display_loop(void) {
         return 1;
     }
 
-    font = TTF_OpenFont("/usr/share/fonts/truetype/ubuntu/UbuntuSansMono[wght].ttf", 36);
+    font = TTF_OpenFont("/usr/share/fonts/truetype/dseg/DSEG7ModernMini-Italic.ttf", 48);
     if (!font) {
         // TODO(ryan): Uh oh...
         printf("Failed to open font\n");
     }
+    smallfont = TTF_OpenFont("/usr/share/fonts/truetype/dseg/DSEG14Classic-Regular.ttf", 24);
+    alphafont = TTF_OpenFont("/usr/share/fonts/truetype/ubuntu/UbuntuSansMono[wght].ttf", 24);
 
     int window_x_pos = SDL_WINDOWPOS_UNDEFINED;
     int window_y_pos = SDL_WINDOWPOS_UNDEFINED;
