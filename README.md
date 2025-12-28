@@ -7,4 +7,4 @@ You do what you must do, and you do it well
 - libsdl2-image-dev - Image loading library for Simple DirectMedia Layer 2, development files
 - libmpv-dev - video player based on MPlayer/mplayer2 (client library dev files)
 - fonts-dseg - Original 7-segment and 14-segment fonts
-- fonts-ubuntu-console - console version of the Ubuntu Mono font
+- fonts-ubuntu - sans-serif font set from Ubuntu
