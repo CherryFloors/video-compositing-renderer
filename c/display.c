@@ -2,6 +2,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_blendmode.h>
 #include <SDL2/SDL_events.h>
+#include <SDL2/SDL_hints.h>
 #include <SDL2/SDL_keyboard.h>
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_pixels.h>
@@ -9,11 +10,13 @@
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_stdinc.h>
 #include <SDL2/SDL_surface.h>
+#include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_video.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <sys/time.h>
 
 SDL_Window *window;
 SDL_Texture *text_texture;
@@ -47,6 +50,22 @@ VcrColorPalette supercolor_palette(void) {
     return vcr_color_palette;
 }
 
+void render_visual_static(SDL_Renderer *renderer, SDL_Rect screen) {
+    SDL_Texture *static_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STATIC, screen.w, screen.h);
+
+    Uint32 pixels[screen.w * screen.h];
+    for (int y = 0; y < screen.h; ++y) {
+        for (int x = 0; x < screen.w; ++x) {
+            Uint8 noise = (Uint8)rand();
+            pixels[y * screen.w + x] = (noise << 24) | (noise << 16) | (noise << 8) | 0xff; // RGBA
+        }
+    }
+
+    SDL_UpdateTexture(static_texture, NULL, pixels, sizeof(Uint32) * screen.w);
+    SDL_RenderCopy(renderer, static_texture, NULL, &screen);
+    SDL_DestroyTexture(static_texture);
+}
+
 void render_videoscreen(SDL_Renderer *renderer, SDL_Rect screen) {
 
     SDL_Rect shadow = screen;
@@ -65,8 +84,9 @@ void render_videoscreen(SDL_Renderer *renderer, SDL_Rect screen) {
         SDL_RenderDrawRect(renderer, &shadow);
     }
 
-    SDL_SetRenderDrawColor(renderer, 0x1A, 0xFD, 0xD7, 0xFF);
-    SDL_RenderFillRect(renderer, &screen);
+    render_visual_static(renderer, screen);
+    // SDL_SetRenderDrawColor(renderer, 0x1A, 0xFD, 0xD7, 0xFF);
+    // SDL_RenderFillRect(renderer, &screen);
 }
 
 void draw_standby_digital_display(SDL_Renderer *renderer, int x, int y, int w, int h) {
@@ -141,7 +161,7 @@ void draw_standby_digital_display(SDL_Renderer *renderer, int x, int y, int w, i
     render_videoscreen(renderer, video_screen);
 }
 
-void standby_screen(SDL_Renderer *renderer, VcrColorPalette colors) {
+void standby_screen(SDL_Renderer *renderer, VcrColorPalette colors, bool clear) {
     SDL_SetRenderDrawColor(renderer, colors.text_fg.r, colors.text_fg.g, colors.text_fg.b, 255);
     SDL_RenderClear(renderer);
 
@@ -172,7 +192,9 @@ void standby_screen(SDL_Renderer *renderer, VcrColorPalette colors) {
     draw_standby_digital_display(renderer, 150, 300, 400, 50);
 
     SDL_RenderPresent(renderer);
-    SDL_RenderClear(renderer);
+    if (clear) {
+        SDL_RenderClear(renderer);
+    }
 }
 
 bool process_key_stroke(SDL_Keysym symbol) {
@@ -192,6 +214,7 @@ bool process_key_stroke(SDL_Keysym symbol) {
 }
 
 bool handle_event(SDL_Event *event, SDL_Renderer *renderer) {
+
     bool should_quit = false;
     int r, g, b;
 
@@ -201,6 +224,9 @@ bool handle_event(SDL_Event *event, SDL_Renderer *renderer) {
         break;
 
     case SDL_KEYDOWN:
+        struct timeval t1, t2;
+        double elapsed_time;
+        gettimeofday(&t1, NULL);
 
         if (!font) {
             r = event->key.keysym.sym % 255;
@@ -231,11 +257,18 @@ bool handle_event(SDL_Event *event, SDL_Renderer *renderer) {
         SDL_RenderClear(renderer);
 
         if (event->key.keysym.sym == SDLK_s) {
-            standby_screen(renderer, supercolor_palette());
+            standby_screen(renderer, supercolor_palette(), false);
         }
+        gettimeofday(&t2, NULL);
+        // Seconds to milliseconds
+        elapsed_time = (t2.tv_sec - t1.tv_sec) * 1000.0;
+        // Microseconds to milliseconds
+        elapsed_time += (t2.tv_usec - t1.tv_usec) / 1000.0;
+        printf("%f ms/frame  |  %f fps\n", elapsed_time, 1000.0 / elapsed_time);
 
         break;
     }
+
 
     return (should_quit);
 }
@@ -272,14 +305,30 @@ int run_display_loop(void) {
 
     window = SDL_CreateWindow("vcr display", window_x_pos, window_y_pos, 640, 480, SDL_WINDOW_BORDERLESS);
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+    SDL_Rect video_screen = {50, 50, 320, 240};
+    const int TARGET_FPS = 24;
+    const int FRAME_DELAY = 1000 / TARGET_FPS;
 
-    standby_screen(renderer, default_color_palette());
-    while (true) {
+    standby_screen(renderer, default_color_palette(), false);
+    bool running = true;
+    while (running) {
+        int frame_start = SDL_GetTicks();
         SDL_Event Event;
-        SDL_WaitEvent(&Event);
+        // SDL_WaitEvent(&Event);
 
-        if (handle_event(&Event, renderer)) {
-            break;
+        while (SDL_PollEvent(&Event)) {
+        
+            if (handle_event(&Event, renderer)) {
+                running = false;
+            }
+        }
+        render_visual_static(renderer, video_screen);
+        SDL_RenderPresent(renderer);
+
+        int frame_time = SDL_GetTicks() - frame_start;
+        if (FRAME_DELAY > frame_time) {
+            SDL_Delay(FRAME_DELAY - frame_time);
+            printf("frame_time=%d  SDL_Delay(%d)\n", frame_time, FRAME_DELAY - frame_time);
         }
     }
 
