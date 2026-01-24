@@ -15,9 +15,8 @@
 #include <SDL2/SDL_video.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <sys/time.h>
-
+#include <unistd.h>
 
 typedef struct DigitalDisplayState {
     int hour;
@@ -119,7 +118,8 @@ VcrColorPalette supercolor_palette(void) {
 }
 
 void render_visual_static(VcrDisplay *vcr_display, SDL_Rect screen) {
-    SDL_Texture *static_texture = SDL_CreateTexture(vcr_display->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STATIC, screen.w, screen.h);
+    SDL_Texture *static_texture = SDL_CreateTexture(vcr_display->renderer, SDL_PIXELFORMAT_RGBA8888,
+                                                    SDL_TEXTUREACCESS_STATIC, screen.w, screen.h);
 
     Uint32 pixels[screen.w * screen.h];
     for (int y = 0; y < screen.h; ++y) {
@@ -171,13 +171,17 @@ void draw_standby_digital_display(VcrDisplay *vcr_display, int x, int y, int w, 
     SDL_Color inactive_text_center_color = {0x25, 0x25, 0x25};
 
     SDL_Surface *ampm = TTF_RenderText_Blended(vcr_display->default_font, " PM", active_text_outline_color);
-    SDL_Surface *inactive_surface = TTF_RenderText_Blended(vcr_display->digital_clock_font, "8888888:88", inactive_text_outline_color);
+    SDL_Surface *inactive_surface =
+        TTF_RenderText_Blended(vcr_display->digital_clock_font, "8888888:88", inactive_text_outline_color);
     SDL_Surface *ampm_surf = TTF_RenderText_Blended(vcr_display->default_font, " PM", active_text_center_color);
-    SDL_Surface *active_surface = TTF_RenderText_Blended(vcr_display->digital_clock_font, "VCR!!12:34", active_text_outline_color);
+    SDL_Surface *active_surface =
+        TTF_RenderText_Blended(vcr_display->digital_clock_font, "VCR!!12:34", active_text_outline_color);
     TTF_SetFontOutline(vcr_display->default_font, 0);
     TTF_SetFontOutline(vcr_display->digital_clock_font, 0);
-    SDL_Surface *active_surface_no_outline = TTF_RenderText_Blended(vcr_display->digital_clock_font, "VCR!!12:34", active_text_center_color);
-    SDL_Surface *inactive_surface_no_outline = TTF_RenderText_Blended(vcr_display->digital_clock_font, "8888888:88", inactive_text_center_color);
+    SDL_Surface *active_surface_no_outline =
+        TTF_RenderText_Blended(vcr_display->digital_clock_font, "VCR!!12:34", active_text_center_color);
+    SDL_Surface *inactive_surface_no_outline =
+        TTF_RenderText_Blended(vcr_display->digital_clock_font, "8888888:88", inactive_text_center_color);
 
     int padding = w - inactive_surface->w;
     x = (640 - w + ampm->w + padding) / 2;
@@ -191,8 +195,10 @@ void draw_standby_digital_display(VcrDisplay *vcr_display, int x, int y, int w, 
     SDL_Texture *inactive_ampm = SDL_CreateTextureFromSurface(vcr_display->renderer, ampm);
     SDL_Texture *active_ampm = SDL_CreateTextureFromSurface(vcr_display->renderer, ampm_surf);
     SDL_Texture *active_texture = SDL_CreateTextureFromSurface(vcr_display->renderer, active_surface);
-    SDL_Texture *inactive_texture_no_outline = SDL_CreateTextureFromSurface(vcr_display->renderer, inactive_surface_no_outline);
-    SDL_Texture *active_texture_no_outline = SDL_CreateTextureFromSurface(vcr_display->renderer, active_surface_no_outline);
+    SDL_Texture *inactive_texture_no_outline =
+        SDL_CreateTextureFromSurface(vcr_display->renderer, inactive_surface_no_outline);
+    SDL_Texture *active_texture_no_outline =
+        SDL_CreateTextureFromSurface(vcr_display->renderer, active_surface_no_outline);
 
     // display bg
     SDL_SetRenderDrawColor(vcr_display->renderer, display_bg.r, display_bg.g, display_bg.b, 255);
@@ -337,7 +343,6 @@ bool handle_event(SDL_Event *event, VcrDisplay *vcr_display) {
         break;
     }
 
-
     return (should_quit);
 }
 
@@ -359,7 +364,7 @@ int run_display_loop(void) {
         int frame_start = SDL_GetTicks();
         SDL_Event Event;
         while (SDL_PollEvent(&Event)) {
-        
+
             if (handle_event(&Event, &vcr_display)) {
                 running = false;
             }
