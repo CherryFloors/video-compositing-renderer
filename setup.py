@@ -15,7 +15,7 @@ LIB_VCR = Extension(
     sources=["c/_libvcr.c"],
     include_dirs=["/usr/include/SDL2", str(Path("c").resolve())],
     define_macros=define_macros,
-    libraries=["mpv", "SDL2", "SDL2_ttf", "SDL2_image"],
+    libraries=["mpv", "SDL2", "SDL2_ttf", "SDL2_image", "m"],
 )
 
 setup(ext_modules=[LIB_VCR])

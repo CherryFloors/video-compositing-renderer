@@ -13,6 +13,7 @@
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_video.h>
+#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <sys/time.h>
@@ -38,6 +39,20 @@ typedef struct VcrDisplay {
     TTF_Font *digital_clock_font;
     TTF_Font *default_font;
 } VcrDisplay;
+
+typedef struct PlayArrowGlyph {
+    SDL_Vertex layer0[3];
+    SDL_Vertex layer1[3];
+    SDL_Vertex layer2[3];
+    SDL_Vertex layer3[3];
+} PlayArrowGlyph;
+
+typedef struct PauseBarGlyph {
+    SDL_Rect layer0;
+    SDL_Rect layer1;
+    SDL_Rect layer2;
+    SDL_Rect layer3;
+} PauseBarGlyph;
 
 int init_vcr_display_and_sdl(VcrDisplay *vcr_display) {
 
@@ -73,6 +88,134 @@ int init_vcr_display_and_sdl(VcrDisplay *vcr_display) {
     vcr_display->renderer = SDL_CreateRenderer(vcr_display->window, -1, SDL_RENDERER_SOFTWARE);
 
     return 0;
+}
+
+void render_pause_bar_glyph(SDL_Renderer *renderer, SDL_Rect container, SDL_Color background_color, bool active) {
+
+    int x = container.x;
+    int y = container.y;
+    int height = container.h;
+    int glyph_width = container.w;
+
+    int width = glyph_width / 4;
+    int outline_width = width / 4;
+    if (outline_width < 1) {
+        outline_width = 1;
+    }
+
+    SDL_Color color_outer = {0x1A, 0xFD, 0xD7, 0x00};
+    SDL_Color color_inner = {0xBD, 0xFF, 0xFD, 0x00};
+    if (!active) {
+        color_outer = (SDL_Color){0x25, 0x25, 0x25, 0x00};
+        color_inner = (SDL_Color){0x25, 0x25, 0x25, 0x00};
+    }
+
+    int layer2_delta = width - outline_width;
+    SDL_Rect layer1 = {x + outline_width, y + outline_width, glyph_width - (2 * outline_width), height - (2 * outline_width)};
+    SDL_Rect layer2 = {x + layer2_delta, y + layer2_delta, glyph_width - (2 * layer2_delta), height - (2 * layer2_delta)};
+    SDL_Rect layer3 = {x + width, y + width, glyph_width - (2 * width), height - (2 * width)};
+
+    SDL_SetRenderDrawColor(renderer, color_outer.r, color_outer.g, color_outer.b, color_outer.a);
+    SDL_RenderFillRect(renderer, &container);
+
+    SDL_SetRenderDrawColor(renderer, color_inner.r, color_inner.g, color_inner.b, color_inner.a);
+    SDL_RenderFillRect(renderer, &layer1);
+
+    SDL_SetRenderDrawColor(renderer, color_outer.r, color_outer.g, color_outer.b, color_outer.a);
+    SDL_RenderFillRect(renderer, &layer2);
+
+    SDL_SetRenderDrawColor(renderer, background_color.r, background_color.g, background_color.b, background_color.a);
+    SDL_RenderFillRect(renderer, &layer3);
+}
+
+PlayArrowGlyph create_play_arrow_glyph(SDL_Rect container, SDL_Color background_color, bool forward, bool active) {
+
+    int x = container.x;
+    int y = container.y;
+    int height = container.h;
+    int glyph_width = container.w;
+    int half_height = height / 2;
+
+    double hypotenuse_of_half_glyph = sqrt(half_height * half_height + glyph_width * glyph_width);
+    double tangent_of_vertical_side_half_angle = (hypotenuse_of_half_glyph - half_height) / glyph_width;
+    double delta_y_factor = 1 / tangent_of_vertical_side_half_angle;
+
+    int width = glyph_width / 4;
+    int outline_width = width / 4;
+    if (outline_width < 1) {
+        outline_width = 1;
+    }
+
+    SDL_Color color_outer = {0x1A, 0xFD, 0xD7, 0x00};
+    SDL_Color color_inner = {0xBD, 0xFF, 0xFD, 0x00};
+    if (!active) {
+        color_outer = (SDL_Color){0x25, 0x25, 0x25, 0x00};
+        color_inner = (SDL_Color){0x25, 0x25, 0x25, 0x00};
+    }
+
+    int point_side_y = y + half_height;
+    int point_side_x = x + glyph_width;
+    int vertical_side_x = x;
+    int point_side_increment_direction = -1;
+    int vertical_side_increment_direction = 1;
+    if (!forward) {
+        vertical_side_x = x + glyph_width;
+        point_side_x = x;
+        point_side_increment_direction *= -1;
+        vertical_side_increment_direction *= -1;
+    }
+
+    PlayArrowGlyph play_arrow_glyph;
+    double slope = (double)(point_side_y - y) / (double)(point_side_x - vertical_side_x);
+    // layer 0
+    play_arrow_glyph.layer0[0].color = play_arrow_glyph.layer0[1].color = play_arrow_glyph.layer0[2].color = color_outer;
+    play_arrow_glyph.layer0[0].position = (SDL_FPoint){(float)vertical_side_x, (float)y};
+    play_arrow_glyph.layer0[1].position = (SDL_FPoint){(float)vertical_side_x, (float)y + height};
+    play_arrow_glyph.layer0[2].position = (SDL_FPoint){(float)point_side_x, (float)point_side_y};
+
+    // layer 1
+    play_arrow_glyph.layer1[0].color = play_arrow_glyph.layer1[1].color = play_arrow_glyph.layer1[2].color = color_inner;
+    double layer1_top_y_delta = (double)outline_width * delta_y_factor;
+    double layer1_top_y = y + layer1_top_y_delta;
+    double layer1_bottom_y = layer1_top_y + (height - (2 * layer1_top_y_delta));
+    double layer1_vertical_side_x = vertical_side_x + (outline_width * vertical_side_increment_direction);
+    double layer1_point_side_x = ((point_side_y - layer1_top_y) / slope) + layer1_vertical_side_x;
+    play_arrow_glyph.layer1[0].position = (SDL_FPoint){(float)layer1_vertical_side_x, (float)layer1_top_y};
+    play_arrow_glyph.layer1[1].position = (SDL_FPoint){(float)layer1_vertical_side_x, (float)layer1_bottom_y};
+    play_arrow_glyph.layer1[2].position = (SDL_FPoint){(float)layer1_point_side_x, (float)point_side_y};
+
+    // layer 2
+    play_arrow_glyph.layer2[0].color = play_arrow_glyph.layer2[1].color = play_arrow_glyph.layer2[2].color = color_outer;
+    double layer2_top_y_delta = (double)(width - outline_width) * delta_y_factor;
+    double layer2_top_y = y + layer2_top_y_delta;
+    double layer2_bottom_y = layer2_top_y + (height - (2 * layer2_top_y_delta));
+    double layer2_vertical_side_x = vertical_side_x + ((width - outline_width) * vertical_side_increment_direction);
+    double layer2_point_side_x = ((point_side_y - layer2_top_y) / slope) + layer2_vertical_side_x;
+    play_arrow_glyph.layer2[0].position = (SDL_FPoint){(float)layer2_vertical_side_x, (float)layer2_top_y};
+    play_arrow_glyph.layer2[1].position = (SDL_FPoint){(float)layer2_vertical_side_x, (float)layer2_bottom_y};
+    play_arrow_glyph.layer2[2].position = (SDL_FPoint){(float)layer2_point_side_x, (float)point_side_y};
+
+    // layer 3
+    play_arrow_glyph.layer3[0].color = play_arrow_glyph.layer3[1].color = play_arrow_glyph.layer3[2].color = background_color;
+    double layer3_top_y_delta = (double)width * delta_y_factor;
+    double layer3_top_y = y + layer3_top_y_delta;
+    double layer3_bottom_y = layer3_top_y + (height - (2 * layer3_top_y_delta));
+    double layer3_vertical_side_x = vertical_side_x + (width * vertical_side_increment_direction);
+    double layer3_point_side_x = ((point_side_y - layer3_top_y) / slope) + layer3_vertical_side_x;
+    play_arrow_glyph.layer3[0].position = (SDL_FPoint){(float)layer3_vertical_side_x, (float)layer3_top_y};
+    play_arrow_glyph.layer3[1].position = (SDL_FPoint){(float)layer3_vertical_side_x, (float)layer3_bottom_y};
+    play_arrow_glyph.layer3[2].position = (SDL_FPoint){(float)layer3_point_side_x, (float)point_side_y};
+
+    return play_arrow_glyph;
+}
+
+void render_play_arrow_glyph_button(SDL_Renderer *renderer, PlayArrowGlyph *play_arrow_glyph) {
+
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+    SDL_RenderGeometry(renderer, NULL, play_arrow_glyph->layer0, 3, NULL, 0);
+    SDL_RenderGeometry(renderer, NULL, play_arrow_glyph->layer1, 3, NULL, 0);
+    SDL_RenderGeometry(renderer, NULL, play_arrow_glyph->layer2, 3, NULL, 0);
+    SDL_RenderGeometry(renderer, NULL, play_arrow_glyph->layer3, 3, NULL, 0);
 }
 
 void destroy_vcr_display_and_clean_up_sdl(VcrDisplay *vcr_display) {
@@ -141,6 +284,9 @@ void render_videoscreen(VcrDisplay *vcr_display, SDL_Rect screen) {
     int shadow_alpha = 0xFF / 2;
     int alpha_decay = shadow_alpha / shadow_size;
 
+    SDL_BlendMode reset_blend_mode;
+    SDL_GetRenderDrawBlendMode(vcr_display->renderer, &reset_blend_mode);
+
     SDL_SetRenderDrawBlendMode(vcr_display->renderer, SDL_BLENDMODE_BLEND);
     for (int i = 0; i < shadow_size; i++) {
         shadow.x -= 1;
@@ -153,6 +299,7 @@ void render_videoscreen(VcrDisplay *vcr_display, SDL_Rect screen) {
     }
 
     render_visual_static(vcr_display, screen);
+    SDL_SetRenderDrawBlendMode(vcr_display->renderer, reset_blend_mode);
     // SDL_SetRenderDrawColor(renderer, 0x1A, 0xFD, 0xD7, 0xFF);
     // SDL_RenderFillRect(renderer, &screen);
 }
@@ -356,6 +503,7 @@ int run_display_loop(void) {
     SDL_Rect video_screen = {50, 50, 320, 240};
     const int TARGET_FPS = 24;
     const int FRAME_DELAY = 1000 / TARGET_FPS;
+    PlayArrowGlyph play_arrow_glyph = create_play_arrow_glyph((SDL_Rect){300, 200, 120, 160}, (SDL_Color){0x00, 0x00, 0x00}, true, true);
 
     standby_screen(&vcr_display, default_color_palette(), false);
     bool running = true;
@@ -371,6 +519,8 @@ int run_display_loop(void) {
         }
 
         render_visual_static(&vcr_display, video_screen);
+        render_play_arrow_glyph_button(vcr_display.renderer, &play_arrow_glyph);
+        render_pause_bar_glyph(vcr_display.renderer, (SDL_Rect){500, 200, 80, 160}, (SDL_Color){0x00, 0x00, 0x00}, true);
         SDL_RenderPresent(vcr_display.renderer);
 
         int frame_time = SDL_GetTicks() - frame_start;
