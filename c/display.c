@@ -36,8 +36,8 @@ typedef struct DigitalDisplayState {
 typedef struct VcrDisplay {
     SDL_Window *window;
     SDL_Renderer *renderer;
-    TTF_Font *digital_clock_font;
-    TTF_Font *default_font;
+    TTF_Font *font_digital_clock_7seg;
+    TTF_Font *font_default;
 } VcrDisplay;
 
 typedef struct PlayArrowGlyph {
@@ -66,14 +66,17 @@ int init_vcr_display_and_sdl(VcrDisplay *vcr_display) {
         return 1;
     }
 
-    vcr_display->digital_clock_font = TTF_OpenFont("/usr/share/fonts/truetype/dseg/DSEG7ModernMini-Italic.ttf", 48);
-    if (!vcr_display->digital_clock_font) {
+    vcr_display->font_digital_clock_7seg =
+        TTF_OpenFont("/usr/share/fonts/truetype/dseg/DSEG7ModernMini-Italic.ttf", 48);
+    if (!vcr_display->font_digital_clock_7seg) {
         printf("Failed to open clock font\n");
+        return 1;
     }
 
-    vcr_display->default_font = TTF_OpenFont("/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf", 24);
-    if (!vcr_display->default_font) {
+    vcr_display->font_default = TTF_OpenFont("/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf", 24);
+    if (!vcr_display->font_default) {
         printf("Failed to open default font\n");
+        return 1;
     }
 
     int window_x_pos = SDL_WINDOWPOS_UNDEFINED;
@@ -111,8 +114,10 @@ void render_pause_bar_glyph(SDL_Renderer *renderer, SDL_Rect container, SDL_Colo
     }
 
     int layer2_delta = width - outline_width;
-    SDL_Rect layer1 = {x + outline_width, y + outline_width, glyph_width - (2 * outline_width), height - (2 * outline_width)};
-    SDL_Rect layer2 = {x + layer2_delta, y + layer2_delta, glyph_width - (2 * layer2_delta), height - (2 * layer2_delta)};
+    SDL_Rect layer1 = {x + outline_width, y + outline_width, glyph_width - (2 * outline_width),
+                       height - (2 * outline_width)};
+    SDL_Rect layer2 = {x + layer2_delta, y + layer2_delta, glyph_width - (2 * layer2_delta),
+                       height - (2 * layer2_delta)};
     SDL_Rect layer3 = {x + width, y + width, glyph_width - (2 * width), height - (2 * width)};
 
     SDL_SetRenderDrawColor(renderer, color_outer.r, color_outer.g, color_outer.b, color_outer.a);
@@ -168,13 +173,15 @@ PlayArrowGlyph create_play_arrow_glyph(SDL_Rect container, SDL_Color background_
     PlayArrowGlyph play_arrow_glyph;
     double slope = (double)(point_side_y - y) / (double)(point_side_x - vertical_side_x);
     // layer 0
-    play_arrow_glyph.layer0[0].color = play_arrow_glyph.layer0[1].color = play_arrow_glyph.layer0[2].color = color_outer;
+    play_arrow_glyph.layer0[0].color = play_arrow_glyph.layer0[1].color = play_arrow_glyph.layer0[2].color =
+        color_outer;
     play_arrow_glyph.layer0[0].position = (SDL_FPoint){(float)vertical_side_x, (float)y};
     play_arrow_glyph.layer0[1].position = (SDL_FPoint){(float)vertical_side_x, (float)y + height};
     play_arrow_glyph.layer0[2].position = (SDL_FPoint){(float)point_side_x, (float)point_side_y};
 
     // layer 1
-    play_arrow_glyph.layer1[0].color = play_arrow_glyph.layer1[1].color = play_arrow_glyph.layer1[2].color = color_inner;
+    play_arrow_glyph.layer1[0].color = play_arrow_glyph.layer1[1].color = play_arrow_glyph.layer1[2].color =
+        color_inner;
     double layer1_top_y_delta = (double)outline_width * delta_y_factor;
     double layer1_top_y = y + layer1_top_y_delta;
     double layer1_bottom_y = layer1_top_y + (height - (2 * layer1_top_y_delta));
@@ -185,7 +192,8 @@ PlayArrowGlyph create_play_arrow_glyph(SDL_Rect container, SDL_Color background_
     play_arrow_glyph.layer1[2].position = (SDL_FPoint){(float)layer1_point_side_x, (float)point_side_y};
 
     // layer 2
-    play_arrow_glyph.layer2[0].color = play_arrow_glyph.layer2[1].color = play_arrow_glyph.layer2[2].color = color_outer;
+    play_arrow_glyph.layer2[0].color = play_arrow_glyph.layer2[1].color = play_arrow_glyph.layer2[2].color =
+        color_outer;
     double layer2_top_y_delta = (double)(width - outline_width) * delta_y_factor;
     double layer2_top_y = y + layer2_top_y_delta;
     double layer2_bottom_y = layer2_top_y + (height - (2 * layer2_top_y_delta));
@@ -196,7 +204,8 @@ PlayArrowGlyph create_play_arrow_glyph(SDL_Rect container, SDL_Color background_
     play_arrow_glyph.layer2[2].position = (SDL_FPoint){(float)layer2_point_side_x, (float)point_side_y};
 
     // layer 3
-    play_arrow_glyph.layer3[0].color = play_arrow_glyph.layer3[1].color = play_arrow_glyph.layer3[2].color = background_color;
+    play_arrow_glyph.layer3[0].color = play_arrow_glyph.layer3[1].color = play_arrow_glyph.layer3[2].color =
+        background_color;
     double layer3_top_y_delta = (double)width * delta_y_factor;
     double layer3_top_y = y + layer3_top_y_delta;
     double layer3_bottom_y = layer3_top_y + (height - (2 * layer3_top_y_delta));
@@ -222,13 +231,13 @@ void destroy_vcr_display_and_clean_up_sdl(VcrDisplay *vcr_display) {
 
     SDL_DestroyWindow(vcr_display->window);
     SDL_DestroyRenderer(vcr_display->renderer);
-    TTF_CloseFont(vcr_display->digital_clock_font);
-    TTF_CloseFont(vcr_display->default_font);
+    TTF_CloseFont(vcr_display->font_digital_clock_7seg);
+    TTF_CloseFont(vcr_display->font_default);
 
     vcr_display->window = NULL;
     vcr_display->renderer = NULL;
-    vcr_display->digital_clock_font = NULL;
-    vcr_display->default_font = NULL;
+    vcr_display->font_digital_clock_7seg = NULL;
+    vcr_display->font_default = NULL;
 
     TTF_Quit();
     SDL_Quit();
@@ -307,8 +316,8 @@ void render_videoscreen(VcrDisplay *vcr_display, SDL_Rect screen) {
 void draw_standby_digital_display(VcrDisplay *vcr_display, int x, int y, int w, int h) {
 
     int outw = 1;
-    TTF_SetFontOutline(vcr_display->digital_clock_font, outw);
-    TTF_SetFontOutline(vcr_display->default_font, outw);
+    TTF_SetFontOutline(vcr_display->font_digital_clock_7seg, outw);
+    TTF_SetFontOutline(vcr_display->font_default, outw);
 
     SDL_Color display_bg = {0x00, 0x00, 0x00};
     SDL_Color solid_text_color = {0x1A, 0xFD, 0xD7};
@@ -317,18 +326,18 @@ void draw_standby_digital_display(VcrDisplay *vcr_display, int x, int y, int w, 
     SDL_Color inactive_text_outline_color = {0x3A, 0x3A, 0x3A};
     SDL_Color inactive_text_center_color = {0x25, 0x25, 0x25};
 
-    SDL_Surface *ampm = TTF_RenderText_Blended(vcr_display->default_font, " PM", active_text_outline_color);
+    SDL_Surface *ampm = TTF_RenderText_Blended(vcr_display->font_default, " PM", active_text_outline_color);
     SDL_Surface *inactive_surface =
-        TTF_RenderText_Blended(vcr_display->digital_clock_font, "8888888:88", inactive_text_outline_color);
-    SDL_Surface *ampm_surf = TTF_RenderText_Blended(vcr_display->default_font, " PM", active_text_center_color);
+        TTF_RenderText_Blended(vcr_display->font_digital_clock_7seg, "8888888:88", inactive_text_outline_color);
+    SDL_Surface *ampm_surf = TTF_RenderText_Blended(vcr_display->font_default, " PM", active_text_center_color);
     SDL_Surface *active_surface =
-        TTF_RenderText_Blended(vcr_display->digital_clock_font, "VCR!!12:34", active_text_outline_color);
-    TTF_SetFontOutline(vcr_display->default_font, 0);
-    TTF_SetFontOutline(vcr_display->digital_clock_font, 0);
+        TTF_RenderText_Blended(vcr_display->font_digital_clock_7seg, "VCR!!12:34", active_text_outline_color);
+    TTF_SetFontOutline(vcr_display->font_default, 0);
+    TTF_SetFontOutline(vcr_display->font_digital_clock_7seg, 0);
     SDL_Surface *active_surface_no_outline =
-        TTF_RenderText_Blended(vcr_display->digital_clock_font, "VCR!!12:34", active_text_center_color);
+        TTF_RenderText_Blended(vcr_display->font_digital_clock_7seg, "VCR!!12:34", active_text_center_color);
     SDL_Surface *inactive_surface_no_outline =
-        TTF_RenderText_Blended(vcr_display->digital_clock_font, "8888888:88", inactive_text_center_color);
+        TTF_RenderText_Blended(vcr_display->font_digital_clock_7seg, "8888888:88", inactive_text_center_color);
 
     int padding = w - inactive_surface->w;
     x = (640 - w + ampm->w + padding) / 2;
@@ -449,7 +458,7 @@ bool handle_event(SDL_Event *event, VcrDisplay *vcr_display) {
         double elapsed_time;
         gettimeofday(&t1, NULL);
 
-        if (!vcr_display->digital_clock_font) {
+        if (!vcr_display->font_digital_clock_7seg) {
             r = event->key.keysym.sym % 255;
             g = (event->key.keysym.sym * 2) % 255;
             b = (event->key.keysym.sym * event->key.keysym.sym) % 255;
@@ -462,7 +471,7 @@ bool handle_event(SDL_Event *event, VcrDisplay *vcr_display) {
             SDL_snprintf(text, sizeof(text), "I found this (%d)", event->key.keysym.sym);
             SDL_Color foreground = {0x6E, 0xFB, 0x4C};
 
-            SDL_Surface *text_surface = TTF_RenderText_Blended(vcr_display->default_font, text, foreground);
+            SDL_Surface *text_surface = TTF_RenderText_Blended(vcr_display->font_default, text, foreground);
             SDL_Texture *text_texture = SDL_CreateTextureFromSurface(vcr_display->renderer, text_surface);
 
             float scale = 640.0 / text_surface->w;
@@ -503,7 +512,8 @@ int run_display_loop(void) {
     SDL_Rect video_screen = {50, 50, 320, 240};
     const int TARGET_FPS = 24;
     const int FRAME_DELAY = 1000 / TARGET_FPS;
-    PlayArrowGlyph play_arrow_glyph = create_play_arrow_glyph((SDL_Rect){300, 200, 120, 160}, (SDL_Color){0x00, 0x00, 0x00}, true, true);
+    PlayArrowGlyph play_arrow_glyph =
+        create_play_arrow_glyph((SDL_Rect){300, 200, 120, 160}, (SDL_Color){0x00, 0x00, 0x00}, true, true);
 
     standby_screen(&vcr_display, default_color_palette(), false);
     bool running = true;
@@ -520,7 +530,8 @@ int run_display_loop(void) {
 
         render_visual_static(&vcr_display, video_screen);
         render_play_arrow_glyph_button(vcr_display.renderer, &play_arrow_glyph);
-        render_pause_bar_glyph(vcr_display.renderer, (SDL_Rect){500, 200, 80, 160}, (SDL_Color){0x00, 0x00, 0x00}, true);
+        render_pause_bar_glyph(vcr_display.renderer, (SDL_Rect){500, 200, 80, 160}, (SDL_Color){0x00, 0x00, 0x00},
+                               true);
         SDL_RenderPresent(vcr_display.renderer);
 
         int frame_time = SDL_GetTicks() - frame_start;
