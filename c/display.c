@@ -19,26 +19,15 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-typedef struct DigitalDisplayState {
-    int hour;
-    int minute;
-    int channel;
-    bool am;
-    bool vcr;
-    bool hifi;
-    bool rec;
-    bool pause;
-    bool play;
-    bool fast_forward;
-    bool rewind;
-} DigitalDisplayState;
+typedef struct BoxInteger {
+    int height;
+    int width;
+} BoxInteger;
 
-typedef struct VcrDisplay {
-    SDL_Window *window;
-    SDL_Renderer *renderer;
-    TTF_Font *font_digital_clock_7seg;
-    TTF_Font *font_default;
-} VcrDisplay;
+typedef enum DisplayResolution {
+    RESOULUTION_SD_640_480,
+    RESOULUTION_FHD_1920_1080,
+} DisplayResolution;
 
 typedef struct PlayArrowGlyph {
     SDL_Vertex layer0[3];
@@ -53,6 +42,30 @@ typedef struct PauseBarGlyph {
     SDL_Rect layer2;
     SDL_Rect layer3;
 } PauseBarGlyph;
+
+typedef struct DigitalDisplayState {
+    int hour;
+    int minute;
+    int channel;
+    bool am;
+    bool pm;
+    bool vcr;
+    bool hifi;
+    bool rec;
+    bool pause;
+    bool play;
+    bool fast_forward;
+    bool rewind;
+} DigitalDisplayState;
+
+typedef struct VcrDisplay {
+    SDL_Window *window;
+    SDL_Renderer *renderer;
+    TTF_Font *font_digital_clock_7seg;
+    TTF_Font *font_default;
+    SDL_Rect inset_video_screen;
+    SDL_Rect inset_info_container;
+} VcrDisplay;
 
 int init_vcr_display_and_sdl(VcrDisplay *vcr_display) {
 
@@ -73,7 +86,7 @@ int init_vcr_display_and_sdl(VcrDisplay *vcr_display) {
         return 1;
     }
 
-    vcr_display->font_default = TTF_OpenFont("/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf", 24);
+    vcr_display->font_default = TTF_OpenFont("/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf", 20);
     if (!vcr_display->font_default) {
         printf("Failed to open default font\n");
         return 1;
@@ -106,11 +119,12 @@ void render_pause_bar_glyph(SDL_Renderer *renderer, SDL_Rect container, SDL_Colo
         outline_width = 1;
     }
 
-    SDL_Color color_outer = {0x1A, 0xFD, 0xD7, 0x00};
-    SDL_Color color_inner = {0xBD, 0xFF, 0xFD, 0x00};
+    SDL_Color color_outer = {0xBD, 0xFF, 0xFD, 0xff};
+    // SDL_Color color_outer = {0x1A, 0xFD, 0xD7, 0xff};
+    SDL_Color color_inner = {0xBD, 0xFF, 0xFD, 0xff};
     if (!active) {
-        color_outer = (SDL_Color){0x25, 0x25, 0x25, 0x00};
-        color_inner = (SDL_Color){0x25, 0x25, 0x25, 0x00};
+        color_outer = (SDL_Color){0x25, 0x25, 0x25, 0xff};
+        color_inner = (SDL_Color){0x25, 0x25, 0x25, 0xff};
     }
 
     int layer2_delta = width - outline_width;
@@ -133,6 +147,18 @@ void render_pause_bar_glyph(SDL_Renderer *renderer, SDL_Rect container, SDL_Colo
     SDL_RenderFillRect(renderer, &layer3);
 }
 
+SDL_Texture *render_pause_bar_glyph_texture(SDL_Renderer *renderer, int width, int height, SDL_Color background_color, bool active) {
+    SDL_Rect glyph_container = { 0, 0, width, height }; 
+    SDL_Texture *target = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, glyph_container.w, glyph_container.h);
+
+    SDL_SetRenderTarget(renderer, target);
+    SDL_SetTextureBlendMode(target, SDL_BLENDMODE_BLEND);
+    render_pause_bar_glyph(renderer, glyph_container, background_color, active);
+    SDL_SetRenderTarget(renderer, NULL);
+
+    return target;
+}
+
 PlayArrowGlyph create_play_arrow_glyph(SDL_Rect container, SDL_Color background_color, bool forward, bool active) {
 
     int x = container.x;
@@ -150,12 +176,14 @@ PlayArrowGlyph create_play_arrow_glyph(SDL_Rect container, SDL_Color background_
     if (outline_width < 1) {
         outline_width = 1;
     }
+    outline_width = 1;
 
-    SDL_Color color_outer = {0x1A, 0xFD, 0xD7, 0x00};
-    SDL_Color color_inner = {0xBD, 0xFF, 0xFD, 0x00};
+    SDL_Color color_outer = {0xBD, 0xFF, 0xFD, 0xff};
+    // SDL_Color color_outer = {0x1A, 0xFD, 0xD7, 0xff};
+    SDL_Color color_inner = {0xBD, 0xFF, 0xFD, 0xff};
     if (!active) {
-        color_outer = (SDL_Color){0x25, 0x25, 0x25, 0x00};
-        color_inner = (SDL_Color){0x25, 0x25, 0x25, 0x00};
+        color_outer = (SDL_Color){0x25, 0x25, 0x25, 0xff};
+        color_inner = (SDL_Color){0x25, 0x25, 0x25, 0xff};
     }
 
     int point_side_y = y + half_height;
@@ -220,11 +248,28 @@ PlayArrowGlyph create_play_arrow_glyph(SDL_Rect container, SDL_Color background_
 
 void render_play_arrow_glyph_button(SDL_Renderer *renderer, PlayArrowGlyph *play_arrow_glyph) {
 
-    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
     SDL_RenderGeometry(renderer, NULL, play_arrow_glyph->layer0, 3, NULL, 0);
     SDL_RenderGeometry(renderer, NULL, play_arrow_glyph->layer1, 3, NULL, 0);
     SDL_RenderGeometry(renderer, NULL, play_arrow_glyph->layer2, 3, NULL, 0);
     SDL_RenderGeometry(renderer, NULL, play_arrow_glyph->layer3, 3, NULL, 0);
+}
+
+SDL_Texture *render_play_arrow_glyph_texture(SDL_Renderer *renderer, int height, int width, SDL_Color background_color, bool forward, bool active) {
+
+    SDL_Rect glyph_container = { 0, 0, width, height }; 
+    SDL_Texture *target = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, glyph_container.w, glyph_container.h);
+
+    SDL_SetRenderTarget(renderer, target);
+    SDL_SetTextureBlendMode(target, SDL_BLENDMODE_BLEND);
+    PlayArrowGlyph play_arrow_glyph = create_play_arrow_glyph(glyph_container, background_color, forward, active);
+    SDL_RenderGeometry(renderer, NULL, play_arrow_glyph.layer0, 3, NULL, 0);
+    SDL_RenderGeometry(renderer, NULL, play_arrow_glyph.layer1, 3, NULL, 0);
+    SDL_RenderGeometry(renderer, NULL, play_arrow_glyph.layer2, 3, NULL, 0);
+    SDL_RenderGeometry(renderer, NULL, play_arrow_glyph.layer3, 3, NULL, 0);
+
+    SDL_SetRenderTarget(renderer, NULL);
+
+    return target;
 }
 
 void destroy_vcr_display_and_clean_up_sdl(VcrDisplay *vcr_display) {
@@ -307,13 +352,58 @@ void render_videoscreen(VcrDisplay *vcr_display, SDL_Rect screen) {
         SDL_RenderDrawRect(vcr_display->renderer, &shadow);
     }
 
-    render_visual_static(vcr_display, screen);
+    // render_visual_static(vcr_display, screen);
     SDL_SetRenderDrawBlendMode(vcr_display->renderer, reset_blend_mode);
-    // SDL_SetRenderDrawColor(renderer, 0x1A, 0xFD, 0xD7, 0xFF);
-    // SDL_RenderFillRect(renderer, &screen);
+    SDL_SetRenderDrawColor(vcr_display->renderer, 0x1A, 0xFD, 0xD7, 0xFF);
+    SDL_RenderFillRect(vcr_display->renderer, &screen);
 }
 
-void draw_standby_digital_display(VcrDisplay *vcr_display, int x, int y, int w, int h) {
+SDL_Texture *render_glow_text_two_layer(SDL_Renderer *renderer, TTF_Font *font, const char *text, SDL_Color base_color, SDL_Color bright_color, bool alpha, bool small_font) {
+
+    SDL_Color active_text_center_color = bright_color;
+    SDL_Color active_text_outline_color = {base_color.r, base_color.g, base_color.b};
+    if (alpha) {
+        active_text_outline_color.a = 120;
+    }
+
+    int border_width = 1;
+    TTF_SetFontOutline(font, border_width);
+
+    SDL_Surface *surface_outline = TTF_RenderText_Blended(font, text, active_text_outline_color);
+    if (!small_font) {
+        TTF_SetFontOutline(font, 0);
+    }
+    SDL_Surface *surface_center = TTF_RenderText_Blended(font, text, active_text_center_color);
+    TTF_SetFontOutline(font, 0);
+
+    SDL_Texture *texture_outline = SDL_CreateTextureFromSurface(renderer, surface_outline);
+    SDL_Texture *texture_center = SDL_CreateTextureFromSurface(renderer, surface_center);
+
+    int target_width = surface_outline->w;
+    int target_height = surface_outline->h;
+    SDL_Rect aligned_center_text = { (target_width - surface_center->w) / 2, (target_height - surface_center->h) / 2, surface_center->w, surface_center->h };
+    SDL_Texture *target = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, target_width, target_height);
+    SDL_SetTextureBlendMode(target, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderTarget(renderer, target);
+
+    if (small_font) {
+        SDL_RenderCopy(renderer, texture_outline, NULL, NULL);
+        SDL_RenderCopy(renderer, texture_center, NULL, &aligned_center_text);
+    } else {
+        SDL_RenderCopy(renderer, texture_center, NULL, &aligned_center_text);
+        SDL_RenderCopy(renderer, texture_outline, NULL, NULL);
+    }
+
+    SDL_FreeSurface(surface_outline);
+    SDL_FreeSurface(surface_center);
+    SDL_DestroyTexture(texture_outline);
+    SDL_DestroyTexture(texture_center);
+    SDL_SetRenderTarget(renderer, NULL);
+
+    return target;
+};
+
+void debug_draw_standby_digital_display(VcrDisplay *vcr_display, int x, int y, int w, int h) {
 
     int outw = 1;
     TTF_SetFontOutline(vcr_display->font_digital_clock_7seg, outw);
@@ -386,9 +476,205 @@ void draw_standby_digital_display(VcrDisplay *vcr_display, int x, int y, int w, 
     SDL_DestroyTexture(inactive_texture_no_outline);
     SDL_DestroyTexture(active_texture_no_outline);
 
+    // test new clock draw
+    SDL_Texture *inactive_clock = render_glow_text_two_layer(vcr_display->renderer, vcr_display->font_digital_clock_7seg, "8888888:88", inactive_text_outline_color, inactive_text_center_color, false, false);
+    SDL_Texture *active_clock = render_glow_text_two_layer(vcr_display->renderer, vcr_display->font_digital_clock_7seg, "VCR!!12:34", active_text_outline_color, active_text_center_color, true, false);
+    SDL_Texture *active_ampm_new = render_glow_text_two_layer(vcr_display->renderer, vcr_display->font_default, " PM", active_text_outline_color, active_text_center_color, true, true);
+
+    int hh, ww, hhh, www;
+    SDL_QueryTexture(active_clock, NULL, NULL, &ww, &hh);
+    SDL_QueryTexture(active_ampm_new, NULL, NULL, &www, &hhh);
+    SDL_Rect new_back = { background.x, background.y + background.h + 5, background.w, background.h };
+    SDL_Rect clck = { new_back.x + ((new_back.w - ww - www) / 2), new_back.y + ((new_back.h - hh) / 2), ww, hh };
+    SDL_SetRenderDrawColor(vcr_display->renderer, display_bg.r, display_bg.g, display_bg.b, 255);
+    SDL_RenderFillRect(vcr_display->renderer, &new_back);
+    SDL_RenderCopy(vcr_display->renderer, inactive_clock, NULL, &clck);
+    SDL_RenderCopy(vcr_display->renderer, active_clock, NULL, &clck);
+    SDL_RenderCopy(vcr_display->renderer, active_ampm_new, NULL, &(SDL_Rect){clck.x + clck.w, clck.y + hhh, www, hhh});
+    SDL_DestroyTexture(inactive_clock);
+    SDL_DestroyTexture(active_clock);
+    SDL_DestroyTexture(active_ampm_new);
+
     // Render Screen
-    SDL_Rect video_screen = {50, 50, 320, 240};
-    render_videoscreen(vcr_display, video_screen);
+    // SDL_Rect video_screen = {50, 50, 320, 240};
+    // render_videoscreen(vcr_display, video_screen);
+}
+
+SDL_Texture *render_digital_display_symbol(VcrDisplay *vcr_display, const char *text, bool active) {
+
+    SDL_Color active_base_color = {0x1A, 0xFD, 0xD7};
+    SDL_Color active_bright_color = {0xBD, 0xFF, 0xFD};
+    SDL_Color inactive_base_color = {0x3A, 0x3A, 0x3A};
+    SDL_Color inactive_bright_color = {0x25, 0x25, 0x25};
+
+    if (active) {
+        return render_glow_text_two_layer(vcr_display->renderer, vcr_display->font_default, text, active_base_color, active_bright_color, true, true);
+    } else {
+        return render_glow_text_two_layer(vcr_display->renderer, vcr_display->font_default, text, inactive_base_color, inactive_bright_color, true, false);
+    }
+}
+
+SDL_Texture *render_digital_display(VcrDisplay *vcr_display, DigitalDisplayState *display_state) {
+
+    SDL_Texture *texture_inactive_clock;
+    SDL_Texture *texture_inactive_channel;
+    SDL_Texture *texture_active_clock;
+    SDL_Texture *texture_active_channel;
+    SDL_Texture *texture_symbol_pm;
+    SDL_Texture *texture_symbol_am;
+    SDL_Texture *texture_symbol_vcr;
+    SDL_Texture *texture_symbol_rec;
+    SDL_Texture *texture_symbol_hifi;
+    SDL_Texture *texture_glyph_play;
+    SDL_Texture *texture_glyph_ff;
+    SDL_Texture *texture_glyph_rew;
+    SDL_Texture *texture_pause_glyph;
+
+    SDL_Color display_background = {0x00, 0x00, 0x00};
+    SDL_Color active_base_color = {0x1A, 0xFD, 0xD7};
+    SDL_Color active_bright_color = {0xBD, 0xFF, 0xFD};
+    SDL_Color inactive_base_color = {0x3A, 0x3A, 0x3A};
+    SDL_Color inactive_bright_color = {0x25, 0x25, 0x25};
+
+    char fmt_channel[3];
+    char fmt_clock[6];
+    SDL_snprintf(fmt_channel, sizeof(fmt_channel), "%02d", display_state->channel);
+    SDL_snprintf(fmt_clock, sizeof(fmt_clock), "%02d:%02d", display_state->hour, display_state->minute);
+    if (display_state->hour < 10) {
+        fmt_clock[0] = *"!";
+    }
+
+    texture_inactive_clock = render_glow_text_two_layer(vcr_display->renderer, vcr_display->font_digital_clock_7seg, "88:88", inactive_base_color, inactive_bright_color, false, false);
+    texture_inactive_channel = render_glow_text_two_layer(vcr_display->renderer, vcr_display->font_digital_clock_7seg, "88", inactive_base_color, inactive_bright_color, false, false);
+    texture_active_clock = render_glow_text_two_layer(vcr_display->renderer, vcr_display->font_digital_clock_7seg, fmt_clock, active_base_color, active_bright_color, true, false);
+    texture_active_channel = render_glow_text_two_layer(vcr_display->renderer, vcr_display->font_digital_clock_7seg, fmt_channel, active_base_color, active_bright_color, true, false);
+    texture_symbol_pm = render_digital_display_symbol(vcr_display, " PM ", display_state->pm);
+    texture_symbol_am = render_digital_display_symbol(vcr_display, " AM ", display_state->am);
+    texture_symbol_vcr = render_digital_display_symbol(vcr_display, "VCR", display_state->vcr);
+    texture_symbol_rec = render_digital_display_symbol(vcr_display, "REC", display_state->rec);
+    texture_symbol_hifi = render_digital_display_symbol(vcr_display, "Hi-Fi", display_state->hifi);
+
+    SDL_Rect container_clock;
+    SDL_Rect container_channel;
+    SDL_Rect container_pm;
+    SDL_Rect container_am;
+    SDL_Rect container_vcr;
+    SDL_Rect container_rec;
+    SDL_Rect container_hifi;
+
+    SDL_QueryTexture(texture_inactive_clock, NULL, NULL, &container_clock.w, &container_clock.h);
+    SDL_QueryTexture(texture_inactive_channel, NULL, NULL, &container_channel.w, &container_channel.h);
+    SDL_QueryTexture(texture_symbol_pm, NULL, NULL, &container_pm.w, &container_pm.h);
+    SDL_QueryTexture(texture_symbol_am, NULL, NULL, &container_am.w, &container_am.h);
+    SDL_QueryTexture(texture_symbol_vcr, NULL, NULL, &container_vcr.w, &container_vcr.h);
+    SDL_QueryTexture(texture_symbol_rec, NULL, NULL, &container_rec.w, &container_rec.h);
+    SDL_QueryTexture(texture_symbol_hifi, NULL, NULL, &container_hifi.w, &container_hifi.h);
+
+    int glyph_height = container_clock.h / 2;
+    int play_glyph_width = (int)(glyph_height * 0.75);
+    int pause_bar_glyph_width = glyph_height  / 2;
+    int glyph_spacing = pause_bar_glyph_width;
+
+    texture_glyph_play = render_play_arrow_glyph_texture(
+        vcr_display->renderer,
+        glyph_height,
+        play_glyph_width,
+        display_background,
+        true,
+        display_state->play || display_state->fast_forward
+    );
+    texture_glyph_ff = render_play_arrow_glyph_texture(
+        vcr_display->renderer,
+        glyph_height,
+        play_glyph_width,
+        display_background,
+        true,
+        display_state->fast_forward
+    );
+    texture_glyph_rew = render_play_arrow_glyph_texture(
+        vcr_display->renderer,
+        glyph_height,
+        play_glyph_width,
+        display_background,
+        false,
+        display_state->rewind
+    );
+    texture_pause_glyph = render_pause_bar_glyph_texture(vcr_display->renderer, pause_bar_glyph_width, glyph_height, display_background, display_state->pause);
+
+    int space_between_clock_and_channel = glyph_height;
+    int top_row_width = container_clock.w + container_am.w + container_channel.w + space_between_clock_and_channel;
+    int bottom_row_width = container_vcr.w + container_rec.w + container_hifi.w + (play_glyph_width * 4) + (pause_bar_glyph_width * 2) + (glyph_spacing * 5);
+    int bottom_symbol_space = (top_row_width - bottom_row_width) / 3;
+    int bottom_row_y = container_clock.h + 10;
+
+    SDL_Rect container_rew1 =   { 0, bottom_row_y, play_glyph_width, glyph_height };
+    SDL_Rect container_rew2 =   { 0, bottom_row_y, play_glyph_width, glyph_height };
+    SDL_Rect container_pause1 = { 0, bottom_row_y, pause_bar_glyph_width, glyph_height };
+    SDL_Rect container_pause2 = { 0, bottom_row_y, pause_bar_glyph_width, glyph_height };
+    SDL_Rect container_play =   { 0, bottom_row_y, play_glyph_width, glyph_height };
+    SDL_Rect container_ff =     { 0, bottom_row_y, play_glyph_width, glyph_height };
+
+    container_clock.x = 0;
+    container_clock.y = 0;
+    container_am.x = container_clock.w;
+    container_am.y = 0;
+    container_pm.x = container_clock.w;
+    container_pm.y = container_clock.h - container_pm.h;
+    container_channel.x = container_clock.w + container_am.w + space_between_clock_and_channel;
+    container_channel.y = 0;
+
+    container_vcr.x = 0;
+    container_vcr.y = bottom_row_y;
+    container_rew1.x = container_vcr.w + bottom_symbol_space;
+    container_rew2.x = container_rew1.x + play_glyph_width + glyph_spacing;
+    container_pause1.x = container_rew2.x + play_glyph_width + glyph_spacing;
+    container_pause2.x = container_pause1.x + pause_bar_glyph_width + glyph_spacing;
+    container_play.x = container_pause2.x + pause_bar_glyph_width + glyph_spacing;
+    container_ff.x = container_play.x + play_glyph_width + glyph_spacing;
+    container_rec.x = container_ff.x + play_glyph_width + bottom_symbol_space;
+    container_rec.y = bottom_row_y;
+    container_hifi.x = container_rec.x + container_rec.w + bottom_symbol_space;
+    container_hifi.y = bottom_row_y;
+
+    SDL_Texture *target = SDL_CreateTexture(vcr_display->renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, top_row_width, bottom_row_y + container_rec.h);
+    SDL_SetRenderTarget(vcr_display->renderer, target);
+    SDL_SetTextureBlendMode(target, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(vcr_display->renderer, 0, 0, 0, 255);
+    SDL_RenderFillRect(vcr_display->renderer, NULL);
+
+    SDL_RenderCopy(vcr_display->renderer, texture_inactive_clock, NULL, &container_clock);
+    SDL_RenderCopy(vcr_display->renderer, texture_active_clock, NULL, &container_clock);
+    SDL_RenderCopy(vcr_display->renderer, texture_symbol_am, NULL, &container_am);
+    SDL_RenderCopy(vcr_display->renderer, texture_symbol_pm, NULL, &container_pm);
+    SDL_RenderCopy(vcr_display->renderer, texture_inactive_channel, NULL, &container_channel);
+    SDL_RenderCopy(vcr_display->renderer, texture_active_channel, NULL, &container_channel);
+    SDL_RenderCopy(vcr_display->renderer, texture_symbol_vcr, NULL, &container_vcr);
+    SDL_RenderCopy(vcr_display->renderer, texture_symbol_rec, NULL, &container_rec);
+    SDL_RenderCopy(vcr_display->renderer, texture_symbol_hifi, NULL, &container_hifi);
+    SDL_RenderCopy(vcr_display->renderer, texture_glyph_rew, NULL, &container_rew1);
+    SDL_RenderCopy(vcr_display->renderer, texture_glyph_rew, NULL, &container_rew2);
+    SDL_RenderCopy(vcr_display->renderer, texture_pause_glyph, NULL, &container_pause1);
+    SDL_RenderCopy(vcr_display->renderer, texture_pause_glyph, NULL, &container_pause2);
+    SDL_RenderCopy(vcr_display->renderer, texture_glyph_play, NULL, &container_play);
+    SDL_RenderCopy(vcr_display->renderer, texture_glyph_ff, NULL, &container_ff);
+
+    SDL_DestroyTexture(texture_inactive_clock);
+    SDL_DestroyTexture(texture_inactive_channel);
+    SDL_DestroyTexture(texture_active_clock);
+    SDL_DestroyTexture(texture_active_channel);
+    SDL_DestroyTexture(texture_symbol_pm);
+    SDL_DestroyTexture(texture_symbol_am);
+    SDL_DestroyTexture(texture_symbol_vcr);
+    SDL_DestroyTexture(texture_symbol_rec);
+    SDL_DestroyTexture(texture_symbol_hifi);
+    SDL_DestroyTexture(texture_glyph_play);
+    SDL_DestroyTexture(texture_glyph_ff);
+    SDL_DestroyTexture(texture_glyph_rew);
+    SDL_DestroyTexture(texture_pause_glyph);
+
+    SDL_SetRenderTarget(vcr_display->renderer, NULL);
+
+    return target;
 }
 
 void standby_screen(VcrDisplay *vcr_display, VcrColorPalette colors, bool clear) {
@@ -418,8 +704,6 @@ void standby_screen(VcrDisplay *vcr_display, VcrColorPalette colors, bool clear)
 
     SDL_SetRenderDrawColor(vcr_display->renderer, colors.c4.r, colors.c4.g, colors.c4.b, 255);
     SDL_RenderFillRect(vcr_display->renderer, &r4);
-
-    draw_standby_digital_display(vcr_display, 150, 300, 400, 50);
 
     SDL_RenderPresent(vcr_display->renderer);
     if (clear) {
@@ -509,13 +793,34 @@ int run_display_loop(void) {
         printf("Failed to init vcr display\n");
     }
 
+    DigitalDisplayState display_state = {
+        2,
+        0,
+        4,
+        false,
+        true,
+        true,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false,
+    };
+
     SDL_Rect video_screen = {50, 50, 320, 240};
     const int TARGET_FPS = 24;
     const int FRAME_DELAY = 1000 / TARGET_FPS;
-    PlayArrowGlyph play_arrow_glyph =
-        create_play_arrow_glyph((SDL_Rect){300, 200, 120, 160}, (SDL_Color){0x00, 0x00, 0x00}, true, true);
 
     standby_screen(&vcr_display, default_color_palette(), false);
+    render_videoscreen(&vcr_display, video_screen);
+     
+    SDL_Texture *tex = render_digital_display(&vcr_display, &display_state);
+    SDL_Rect digital_display_container = { 150, 300, 0, 0 };
+    SDL_QueryTexture(tex, NULL, NULL, &digital_display_container.w, &digital_display_container.h);
+    SDL_RenderCopy(vcr_display.renderer, tex, NULL, &digital_display_container);
+    SDL_DestroyTexture(tex);
+
     bool running = true;
     while (running) {
 
@@ -529,15 +834,11 @@ int run_display_loop(void) {
         }
 
         render_visual_static(&vcr_display, video_screen);
-        render_play_arrow_glyph_button(vcr_display.renderer, &play_arrow_glyph);
-        render_pause_bar_glyph(vcr_display.renderer, (SDL_Rect){500, 200, 80, 160}, (SDL_Color){0x00, 0x00, 0x00},
-                               true);
         SDL_RenderPresent(vcr_display.renderer);
 
         int frame_time = SDL_GetTicks() - frame_start;
         if (FRAME_DELAY > frame_time) {
             SDL_Delay(FRAME_DELAY - frame_time);
-            printf("frame_time=%d  SDL_Delay(%d)\n", frame_time, FRAME_DELAY - frame_time);
         }
     }
 
