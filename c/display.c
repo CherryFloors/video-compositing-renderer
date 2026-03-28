@@ -19,55 +19,27 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-typedef struct BoxInteger {
-    int height;
-    int width;
-} BoxInteger;
+#define VCR_ASSETS_IMPLEMENTATION
+#include "vcr_assets.h"
+
 
 typedef enum DisplayResolution {
     RESOULUTION_SD_640_480,
     RESOULUTION_FHD_1920_1080,
 } DisplayResolution;
 
-typedef struct PlayArrowGlyph {
-    SDL_Vertex layer0[3];
-    SDL_Vertex layer1[3];
-    SDL_Vertex layer2[3];
-    SDL_Vertex layer3[3];
-} PlayArrowGlyph;
 
-typedef struct PauseBarGlyph {
-    SDL_Rect layer0;
-    SDL_Rect layer1;
-    SDL_Rect layer2;
-    SDL_Rect layer3;
-} PauseBarGlyph;
-
-typedef struct DigitalDisplayState {
-    int hour;
-    int minute;
-    int channel;
-    bool am;
-    bool pm;
-    bool vcr;
-    bool hifi;
-    bool rec;
-    bool pause;
-    bool play;
-    bool fast_forward;
-    bool rewind;
-} DigitalDisplayState;
-
-typedef struct VcrDisplay {
+typedef struct VcrApplication {
     SDL_Window *window;
     SDL_Renderer *renderer;
     TTF_Font *font_digital_clock_7seg;
     TTF_Font *font_default;
     SDL_Rect inset_video_screen;
     SDL_Rect inset_info_container;
-} VcrDisplay;
+} VcrApplication;
 
-int init_vcr_display_and_sdl(VcrDisplay *vcr_display) {
+
+int init_vcr_application(VcrApplication *vcr_display) {
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         printf("Failed to init SDL\n");
@@ -100,64 +72,29 @@ int init_vcr_display_and_sdl(VcrDisplay *vcr_display) {
     window_y_pos = 100;
 #endif
 
-    vcr_display->window = SDL_CreateWindow("vcr display", window_x_pos, window_y_pos, 640, 480, SDL_WINDOW_BORDERLESS);
+    vcr_display->window = SDL_CreateWindow("VCR", window_x_pos, window_y_pos, 640, 480, SDL_WINDOW_BORDERLESS);
     vcr_display->renderer = SDL_CreateRenderer(vcr_display->window, -1, SDL_RENDERER_SOFTWARE);
 
     return 0;
 }
 
-void render_pause_bar_glyph(SDL_Renderer *renderer, SDL_Rect container, SDL_Color background_color, bool active) {
 
-    int x = container.x;
-    int y = container.y;
-    int height = container.h;
-    int glyph_width = container.w;
+void destroy_vcr_application(VcrApplication *vcr_display) {
 
-    int width = glyph_width / 4;
-    int outline_width = width / 4;
-    if (outline_width < 1) {
-        outline_width = 1;
-    }
+    SDL_DestroyWindow(vcr_display->window);
+    SDL_DestroyRenderer(vcr_display->renderer);
+    TTF_CloseFont(vcr_display->font_digital_clock_7seg);
+    TTF_CloseFont(vcr_display->font_default);
 
-    SDL_Color color_outer = {0xBD, 0xFF, 0xFD, 0xff};
-    // SDL_Color color_outer = {0x1A, 0xFD, 0xD7, 0xff};
-    SDL_Color color_inner = {0xBD, 0xFF, 0xFD, 0xff};
-    if (!active) {
-        color_outer = (SDL_Color){0x25, 0x25, 0x25, 0xff};
-        color_inner = (SDL_Color){0x25, 0x25, 0x25, 0xff};
-    }
+    vcr_display->window = NULL;
+    vcr_display->renderer = NULL;
+    vcr_display->font_digital_clock_7seg = NULL;
+    vcr_display->font_default = NULL;
 
-    int layer2_delta = width - outline_width;
-    SDL_Rect layer1 = {x + outline_width, y + outline_width, glyph_width - (2 * outline_width),
-                       height - (2 * outline_width)};
-    SDL_Rect layer2 = {x + layer2_delta, y + layer2_delta, glyph_width - (2 * layer2_delta),
-                       height - (2 * layer2_delta)};
-    SDL_Rect layer3 = {x + width, y + width, glyph_width - (2 * width), height - (2 * width)};
-
-    SDL_SetRenderDrawColor(renderer, color_outer.r, color_outer.g, color_outer.b, color_outer.a);
-    SDL_RenderFillRect(renderer, &container);
-
-    SDL_SetRenderDrawColor(renderer, color_inner.r, color_inner.g, color_inner.b, color_inner.a);
-    SDL_RenderFillRect(renderer, &layer1);
-
-    SDL_SetRenderDrawColor(renderer, color_outer.r, color_outer.g, color_outer.b, color_outer.a);
-    SDL_RenderFillRect(renderer, &layer2);
-
-    SDL_SetRenderDrawColor(renderer, background_color.r, background_color.g, background_color.b, background_color.a);
-    SDL_RenderFillRect(renderer, &layer3);
+    TTF_Quit();
+    SDL_Quit();
 }
 
-SDL_Texture *render_pause_bar_glyph_texture(SDL_Renderer *renderer, int width, int height, SDL_Color background_color, bool active) {
-    SDL_Rect glyph_container = { 0, 0, width, height }; 
-    SDL_Texture *target = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, glyph_container.w, glyph_container.h);
-
-    SDL_SetRenderTarget(renderer, target);
-    SDL_SetTextureBlendMode(target, SDL_BLENDMODE_BLEND);
-    render_pause_bar_glyph(renderer, glyph_container, background_color, active);
-    SDL_SetRenderTarget(renderer, NULL);
-
-    return target;
-}
 
 PlayArrowGlyph create_play_arrow_glyph(SDL_Rect container, SDL_Color background_color, bool forward, bool active) {
 
@@ -272,32 +209,6 @@ SDL_Texture *render_play_arrow_glyph_texture(SDL_Renderer *renderer, int height,
     return target;
 }
 
-void destroy_vcr_display_and_clean_up_sdl(VcrDisplay *vcr_display) {
-
-    SDL_DestroyWindow(vcr_display->window);
-    SDL_DestroyRenderer(vcr_display->renderer);
-    TTF_CloseFont(vcr_display->font_digital_clock_7seg);
-    TTF_CloseFont(vcr_display->font_default);
-
-    vcr_display->window = NULL;
-    vcr_display->renderer = NULL;
-    vcr_display->font_digital_clock_7seg = NULL;
-    vcr_display->font_default = NULL;
-
-    TTF_Quit();
-    SDL_Quit();
-}
-
-typedef struct VcrColorPalette {
-    SDL_Color c0;
-    SDL_Color c1;
-    SDL_Color c2;
-    SDL_Color c3;
-    SDL_Color c4;
-    SDL_Color text_fg;
-    SDL_Color text_bg;
-} VcrColorPalette;
-
 VcrColorPalette default_color_palette(void) {
     VcrColorPalette vcr_color_palette = {
         {0xFD, 0xC3, 0x31}, {0xFE, 0x57, 0x22}, {0xF0, 0x35, 0x3C}, {0xB4, 0x21, 0x3D},
@@ -314,7 +225,7 @@ VcrColorPalette supercolor_palette(void) {
     return vcr_color_palette;
 }
 
-void render_visual_static(VcrDisplay *vcr_display, SDL_Rect screen) {
+void render_visual_static(VcrApplication *vcr_display, SDL_Rect screen) {
     SDL_Texture *static_texture = SDL_CreateTexture(vcr_display->renderer, SDL_PIXELFORMAT_RGBA8888,
                                                     SDL_TEXTUREACCESS_STATIC, screen.w, screen.h);
 
@@ -331,7 +242,7 @@ void render_visual_static(VcrDisplay *vcr_display, SDL_Rect screen) {
     SDL_DestroyTexture(static_texture);
 }
 
-void render_videoscreen(VcrDisplay *vcr_display, SDL_Rect screen) {
+void render_videoscreen(VcrApplication *vcr_display, SDL_Rect screen) {
 
     SDL_Rect shadow = screen;
     int shadow_size = 5;
@@ -403,7 +314,7 @@ SDL_Texture *render_glow_text_two_layer(SDL_Renderer *renderer, TTF_Font *font, 
     return target;
 };
 
-void debug_draw_standby_digital_display(VcrDisplay *vcr_display, int x, int y, int w, int h) {
+void debug_draw_standby_digital_display(VcrApplication *vcr_display, int x, int y, int w, int h) {
 
     int outw = 1;
     TTF_SetFontOutline(vcr_display->font_digital_clock_7seg, outw);
@@ -500,7 +411,7 @@ void debug_draw_standby_digital_display(VcrDisplay *vcr_display, int x, int y, i
     // render_videoscreen(vcr_display, video_screen);
 }
 
-SDL_Texture *render_digital_display_symbol(VcrDisplay *vcr_display, const char *text, bool active) {
+SDL_Texture *render_digital_display_symbol(VcrApplication *vcr_display, const char *text, bool active) {
 
     SDL_Color active_base_color = {0x1A, 0xFD, 0xD7};
     SDL_Color active_bright_color = {0xBD, 0xFF, 0xFD};
@@ -514,7 +425,7 @@ SDL_Texture *render_digital_display_symbol(VcrDisplay *vcr_display, const char *
     }
 }
 
-SDL_Texture *render_digital_display(VcrDisplay *vcr_display, DigitalDisplayState *display_state) {
+SDL_Texture *render_digital_display(VcrApplication *vcr_display, DigitalDisplayState *display_state) {
 
     SDL_Texture *texture_inactive_clock;
     SDL_Texture *texture_inactive_channel;
@@ -600,6 +511,7 @@ SDL_Texture *render_digital_display(VcrDisplay *vcr_display, DigitalDisplayState
         display_state->rewind
     );
     texture_pause_glyph = render_pause_bar_glyph_texture(vcr_display->renderer, pause_bar_glyph_width, glyph_height, display_background, display_state->pause);
+    texture_pause_glyph = create_pause_bar_glyph(vcr_display->renderer, pause_bar_glyph_width, glyph_height, display_state->pause);
 
     int space_between_clock_and_channel = glyph_height;
     int top_row_width = container_clock.w + container_am.w + container_channel.w + space_between_clock_and_channel;
@@ -677,7 +589,7 @@ SDL_Texture *render_digital_display(VcrDisplay *vcr_display, DigitalDisplayState
     return target;
 }
 
-void standby_screen(VcrDisplay *vcr_display, VcrColorPalette colors, bool clear) {
+void standby_screen(VcrApplication *vcr_display, VcrColorPalette colors, bool clear) {
     SDL_SetRenderDrawColor(vcr_display->renderer, colors.text_fg.r, colors.text_fg.g, colors.text_fg.b, 255);
     SDL_RenderClear(vcr_display->renderer);
 
@@ -727,7 +639,7 @@ bool process_key_stroke(SDL_Keysym symbol) {
     return should_quit;
 }
 
-bool handle_event(SDL_Event *event, VcrDisplay *vcr_display) {
+bool handle_event(SDL_Event *event, VcrApplication *vcr_display) {
 
     bool should_quit = false;
     int r, g, b;
@@ -788,8 +700,8 @@ bool handle_event(SDL_Event *event, VcrDisplay *vcr_display) {
 
 int run_display_loop(void) {
 
-    VcrDisplay vcr_display;
-    if (init_vcr_display_and_sdl(&vcr_display) != 0) {
+    VcrApplication vcr_display;
+    if (init_vcr_application(&vcr_display) != 0) {
         printf("Failed to init vcr display\n");
     }
 
@@ -802,7 +714,7 @@ int run_display_loop(void) {
         true,
         true,
         false,
-        false,
+        true,
         true,
         false,
         false,
@@ -821,6 +733,9 @@ int run_display_loop(void) {
     SDL_RenderCopy(vcr_display.renderer, tex, NULL, &digital_display_container);
     SDL_DestroyTexture(tex);
 
+    SDL_Texture *test_tex = create_pause_bar_glyph(vcr_display.renderer, 100, 150, true);
+    SDL_Rect test_rect = {400, 50, 100, 150};
+
     bool running = true;
     while (running) {
 
@@ -834,6 +749,9 @@ int run_display_loop(void) {
         }
 
         render_visual_static(&vcr_display, video_screen);
+        
+        SDL_RenderCopy(vcr_display.renderer, test_tex, NULL, &test_rect);
+
         SDL_RenderPresent(vcr_display.renderer);
 
         int frame_time = SDL_GetTicks() - frame_start;
@@ -842,6 +760,7 @@ int run_display_loop(void) {
         }
     }
 
-    destroy_vcr_display_and_clean_up_sdl(&vcr_display);
+    destroy_vcr_application(&vcr_display);
+    SDL_DestroyTexture(test_tex);
     return (0);
 }
