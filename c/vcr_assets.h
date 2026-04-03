@@ -4,6 +4,7 @@
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_rect.h>
 #include <SDL2/SDL_render.h>
+#include <SDL2/SDL_ttf.h>
 
 
 typedef struct PlayArrowGlyph {
@@ -51,11 +52,13 @@ typedef struct VcrColorPalette {
     SDL_Color text_bg;
 } VcrColorPalette;
 
-SDL_Texture *create_pause_bar_glyph(SDL_Renderer *renderer, int tex_width, int tex_height, bool active);
-SDL_Texture *create_play_arrow_glyph_texture(SDL_Renderer *renderer, int width, int height, bool active);
 PlayArrow build_play_arrow(int width, int height);
 PlayArrow annular_play_arrow(PlayArrow play_arrow, float delta);
+SDL_Texture *create_pause_bar_glyph(SDL_Renderer *renderer, int tex_width, int tex_height, bool active);
+SDL_Texture *create_play_arrow_glyph_texture(SDL_Renderer *renderer, int width, int height, bool active);
+SDL_Texture *create_glow_text_two_layer(SDL_Renderer *renderer, TTF_Font *font, const char *text, SDL_Color base_color, SDL_Color bright_color, bool alpha, bool small_font);
 
+#define VCR_ASSETS_IMPLEMENTATION
 #ifdef VCR_ASSETS_IMPLEMENTATION
 
 SDL_Texture *create_pause_bar_glyph(SDL_Renderer *renderer, int tex_width, int tex_height, bool active) {
@@ -195,4 +198,48 @@ SDL_Texture *create_play_arrow_glyph_texture(SDL_Renderer *renderer, int width, 
     return target;
 }
 
+SDL_Texture *create_glow_text_two_layer(SDL_Renderer *renderer, TTF_Font *font, const char *text, SDL_Color base_color, SDL_Color bright_color, bool alpha, bool small_font) {
+
+    SDL_Color active_text_center_color = bright_color;
+    SDL_Color active_text_outline_color = {base_color.r, base_color.g, base_color.b};
+    if (alpha) {
+        active_text_outline_color.a = 120;
+    }
+
+    int border_width = 1;
+    TTF_SetFontOutline(font, border_width);
+
+    SDL_Surface *surface_outline = TTF_RenderText_Blended(font, text, active_text_outline_color);
+    if (!small_font) {
+        TTF_SetFontOutline(font, 0);
+    }
+    SDL_Surface *surface_center = TTF_RenderText_Blended(font, text, active_text_center_color);
+    TTF_SetFontOutline(font, 0);
+
+    SDL_Texture *texture_outline = SDL_CreateTextureFromSurface(renderer, surface_outline);
+    SDL_Texture *texture_center = SDL_CreateTextureFromSurface(renderer, surface_center);
+
+    int target_width = surface_outline->w;
+    int target_height = surface_outline->h;
+    SDL_Rect aligned_center_text = { (target_width - surface_center->w) / 2, (target_height - surface_center->h) / 2, surface_center->w, surface_center->h };
+    SDL_Texture *target = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, target_width, target_height);
+    SDL_SetTextureBlendMode(target, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderTarget(renderer, target);
+
+    if (small_font) {
+        SDL_RenderCopy(renderer, texture_outline, NULL, NULL);
+        SDL_RenderCopy(renderer, texture_center, NULL, &aligned_center_text);
+    } else {
+        SDL_RenderCopy(renderer, texture_center, NULL, &aligned_center_text);
+        SDL_RenderCopy(renderer, texture_outline, NULL, NULL);
+    }
+
+    SDL_FreeSurface(surface_outline);
+    SDL_FreeSurface(surface_center);
+    SDL_DestroyTexture(texture_outline);
+    SDL_DestroyTexture(texture_center);
+    SDL_SetRenderTarget(renderer, NULL);
+
+    return target;
+};
 #endif 

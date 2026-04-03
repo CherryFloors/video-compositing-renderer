@@ -155,50 +155,50 @@ void render_videoscreen(VcrApplication *vcr_display, SDL_Rect screen) {
     SDL_RenderFillRect(vcr_display->renderer, &screen);
 }
 
-SDL_Texture *render_glow_text_two_layer(SDL_Renderer *renderer, TTF_Font *font, const char *text, SDL_Color base_color, SDL_Color bright_color, bool alpha, bool small_font) {
-
-    SDL_Color active_text_center_color = bright_color;
-    SDL_Color active_text_outline_color = {base_color.r, base_color.g, base_color.b};
-    if (alpha) {
-        active_text_outline_color.a = 120;
-    }
-
-    int border_width = 1;
-    TTF_SetFontOutline(font, border_width);
-
-    SDL_Surface *surface_outline = TTF_RenderText_Blended(font, text, active_text_outline_color);
-    if (!small_font) {
-        TTF_SetFontOutline(font, 0);
-    }
-    SDL_Surface *surface_center = TTF_RenderText_Blended(font, text, active_text_center_color);
-    TTF_SetFontOutline(font, 0);
-
-    SDL_Texture *texture_outline = SDL_CreateTextureFromSurface(renderer, surface_outline);
-    SDL_Texture *texture_center = SDL_CreateTextureFromSurface(renderer, surface_center);
-
-    int target_width = surface_outline->w;
-    int target_height = surface_outline->h;
-    SDL_Rect aligned_center_text = { (target_width - surface_center->w) / 2, (target_height - surface_center->h) / 2, surface_center->w, surface_center->h };
-    SDL_Texture *target = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, target_width, target_height);
-    SDL_SetTextureBlendMode(target, SDL_BLENDMODE_BLEND);
-    SDL_SetRenderTarget(renderer, target);
-
-    if (small_font) {
-        SDL_RenderCopy(renderer, texture_outline, NULL, NULL);
-        SDL_RenderCopy(renderer, texture_center, NULL, &aligned_center_text);
-    } else {
-        SDL_RenderCopy(renderer, texture_center, NULL, &aligned_center_text);
-        SDL_RenderCopy(renderer, texture_outline, NULL, NULL);
-    }
-
-    SDL_FreeSurface(surface_outline);
-    SDL_FreeSurface(surface_center);
-    SDL_DestroyTexture(texture_outline);
-    SDL_DestroyTexture(texture_center);
-    SDL_SetRenderTarget(renderer, NULL);
-
-    return target;
-};
+// SDL_Texture *render_glow_text_two_layer(SDL_Renderer *renderer, TTF_Font *font, const char *text, SDL_Color base_color, SDL_Color bright_color, bool alpha, bool small_font) {
+//
+//     SDL_Color active_text_center_color = bright_color;
+//     SDL_Color active_text_outline_color = {base_color.r, base_color.g, base_color.b};
+//     if (alpha) {
+//         active_text_outline_color.a = 120;
+//     }
+//
+//     int border_width = 1;
+//     TTF_SetFontOutline(font, border_width);
+//
+//     SDL_Surface *surface_outline = TTF_RenderText_Blended(font, text, active_text_outline_color);
+//     if (!small_font) {
+//         TTF_SetFontOutline(font, 0);
+//     }
+//     SDL_Surface *surface_center = TTF_RenderText_Blended(font, text, active_text_center_color);
+//     TTF_SetFontOutline(font, 0);
+//
+//     SDL_Texture *texture_outline = SDL_CreateTextureFromSurface(renderer, surface_outline);
+//     SDL_Texture *texture_center = SDL_CreateTextureFromSurface(renderer, surface_center);
+//
+//     int target_width = surface_outline->w;
+//     int target_height = surface_outline->h;
+//     SDL_Rect aligned_center_text = { (target_width - surface_center->w) / 2, (target_height - surface_center->h) / 2, surface_center->w, surface_center->h };
+//     SDL_Texture *target = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, target_width, target_height);
+//     SDL_SetTextureBlendMode(target, SDL_BLENDMODE_BLEND);
+//     SDL_SetRenderTarget(renderer, target);
+//
+//     if (small_font) {
+//         SDL_RenderCopy(renderer, texture_outline, NULL, NULL);
+//         SDL_RenderCopy(renderer, texture_center, NULL, &aligned_center_text);
+//     } else {
+//         SDL_RenderCopy(renderer, texture_center, NULL, &aligned_center_text);
+//         SDL_RenderCopy(renderer, texture_outline, NULL, NULL);
+//     }
+//
+//     SDL_FreeSurface(surface_outline);
+//     SDL_FreeSurface(surface_center);
+//     SDL_DestroyTexture(texture_outline);
+//     SDL_DestroyTexture(texture_center);
+//     SDL_SetRenderTarget(renderer, NULL);
+//
+//     return target;
+// };
 
 void debug_draw_standby_digital_display(VcrApplication *vcr_display, int x, int y, int w, int h) {
 
@@ -274,9 +274,9 @@ void debug_draw_standby_digital_display(VcrApplication *vcr_display, int x, int 
     SDL_DestroyTexture(active_texture_no_outline);
 
     // test new clock draw
-    SDL_Texture *inactive_clock = render_glow_text_two_layer(vcr_display->renderer, vcr_display->font_digital_clock_7seg, "8888888:88", inactive_text_outline_color, inactive_text_center_color, false, false);
-    SDL_Texture *active_clock = render_glow_text_two_layer(vcr_display->renderer, vcr_display->font_digital_clock_7seg, "VCR!!12:34", active_text_outline_color, active_text_center_color, true, false);
-    SDL_Texture *active_ampm_new = render_glow_text_two_layer(vcr_display->renderer, vcr_display->font_default, " PM", active_text_outline_color, active_text_center_color, true, true);
+    SDL_Texture *inactive_clock = create_glow_text_two_layer(vcr_display->renderer, vcr_display->font_digital_clock_7seg, "8888888:88", inactive_text_outline_color, inactive_text_center_color, false, false);
+    SDL_Texture *active_clock = create_glow_text_two_layer(vcr_display->renderer, vcr_display->font_digital_clock_7seg, "VCR!!12:34", active_text_outline_color, active_text_center_color, true, false);
+    SDL_Texture *active_ampm_new = create_glow_text_two_layer(vcr_display->renderer, vcr_display->font_default, " PM", active_text_outline_color, active_text_center_color, true, true);
 
     int hh, ww, hhh, www;
     SDL_QueryTexture(active_clock, NULL, NULL, &ww, &hh);
@@ -297,7 +297,7 @@ void debug_draw_standby_digital_display(VcrApplication *vcr_display, int x, int 
     // render_videoscreen(vcr_display, video_screen);
 }
 
-SDL_Texture *render_digital_display_symbol(VcrApplication *vcr_display, const char *text, bool active) {
+SDL_Texture *create_digital_display_symbol(VcrApplication *vcr_display, const char *text, bool active) {
 
     SDL_Color active_base_color = {0x1A, 0xFD, 0xD7};
     SDL_Color active_bright_color = {0xBD, 0xFF, 0xFD};
@@ -305,9 +305,9 @@ SDL_Texture *render_digital_display_symbol(VcrApplication *vcr_display, const ch
     SDL_Color inactive_bright_color = {0x25, 0x25, 0x25};
 
     if (active) {
-        return render_glow_text_two_layer(vcr_display->renderer, vcr_display->font_default, text, active_base_color, active_bright_color, true, true);
+        return create_glow_text_two_layer(vcr_display->renderer, vcr_display->font_default, text, active_base_color, active_bright_color, true, true);
     } else {
-        return render_glow_text_two_layer(vcr_display->renderer, vcr_display->font_default, text, inactive_base_color, inactive_bright_color, true, false);
+        return create_glow_text_two_layer(vcr_display->renderer, vcr_display->font_default, text, inactive_base_color, inactive_bright_color, true, false);
     }
 }
 
@@ -341,15 +341,15 @@ SDL_Texture *render_digital_display(VcrApplication *vcr_display, DigitalDisplayS
         fmt_clock[0] = *"!";
     }
 
-    texture_inactive_clock = render_glow_text_two_layer(vcr_display->renderer, vcr_display->font_digital_clock_7seg, "88:88", inactive_base_color, inactive_bright_color, false, false);
-    texture_inactive_channel = render_glow_text_two_layer(vcr_display->renderer, vcr_display->font_digital_clock_7seg, "88", inactive_base_color, inactive_bright_color, false, false);
-    texture_active_clock = render_glow_text_two_layer(vcr_display->renderer, vcr_display->font_digital_clock_7seg, fmt_clock, active_base_color, active_bright_color, true, false);
-    texture_active_channel = render_glow_text_two_layer(vcr_display->renderer, vcr_display->font_digital_clock_7seg, fmt_channel, active_base_color, active_bright_color, true, false);
-    texture_symbol_pm = render_digital_display_symbol(vcr_display, " PM ", display_state->pm);
-    texture_symbol_am = render_digital_display_symbol(vcr_display, " AM ", display_state->am);
-    texture_symbol_vcr = render_digital_display_symbol(vcr_display, "VCR", display_state->vcr);
-    texture_symbol_rec = render_digital_display_symbol(vcr_display, "REC", display_state->rec);
-    texture_symbol_hifi = render_digital_display_symbol(vcr_display, "Hi-Fi", display_state->hifi);
+    texture_inactive_clock = create_glow_text_two_layer(vcr_display->renderer, vcr_display->font_digital_clock_7seg, "88:88", inactive_base_color, inactive_bright_color, false, false);
+    texture_inactive_channel = create_glow_text_two_layer(vcr_display->renderer, vcr_display->font_digital_clock_7seg, "88", inactive_base_color, inactive_bright_color, false, false);
+    texture_active_clock = create_glow_text_two_layer(vcr_display->renderer, vcr_display->font_digital_clock_7seg, fmt_clock, active_base_color, active_bright_color, true, false);
+    texture_active_channel = create_glow_text_two_layer(vcr_display->renderer, vcr_display->font_digital_clock_7seg, fmt_channel, active_base_color, active_bright_color, true, false);
+    texture_symbol_pm = create_digital_display_symbol(vcr_display, " PM ", display_state->pm);
+    texture_symbol_am = create_digital_display_symbol(vcr_display, " AM ", display_state->am);
+    texture_symbol_vcr = create_digital_display_symbol(vcr_display, "VCR", display_state->vcr);
+    texture_symbol_rec = create_digital_display_symbol(vcr_display, "REC", display_state->rec);
+    texture_symbol_hifi = create_digital_display_symbol(vcr_display, "Hi-Fi", display_state->hifi);
 
     SDL_Rect container_clock;
     SDL_Rect container_channel;
