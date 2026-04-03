@@ -97,16 +97,26 @@ void destroy_vcr_application(VcrApplication *vcr_display) {
 
 VcrColorPalette default_color_palette(void) {
     VcrColorPalette vcr_color_palette = {
-        {0xFD, 0xC3, 0x31}, {0xFE, 0x57, 0x22}, {0xF0, 0x35, 0x3C}, {0xB4, 0x21, 0x3D},
-        {0x67, 0x1C, 0x3B}, {0xFF, 0xFF, 0xFF}, {0x1A, 0x1A, 0x1A},
+        PALETTE_DYNAMICRON_YELLOW,
+        PALETTE_DYNAMICRON_ORANGE,
+        PALETTE_DYNAMICRON_RED,
+        PALETTE_DYNAMICRON_DARK_RED,
+        PALETTE_DYNAMICRON_PURPLE,
+        PALETTE_DYNAMICRON_WHITE,
+        PALETTE_DYNAMICRON_YELLOW,
     };
     return vcr_color_palette;
 }
 
 VcrColorPalette supercolor_palette(void) {
     VcrColorPalette vcr_color_palette = {
-        {0x03, 0x8D, 0xAE}, {0x8E, 0xA4, 0x3B}, {0xE9, 0xBD, 0x01}, {0xF2, 0x47, 0x01},
-        {0xF8, 0x01, 0x50}, {0xE8, 0xE1, 0xD6}, {0x18, 0x18, 0x18},
+        PALETTE_SUPERCOLOR_BLUE,
+        PALETTE_SUPERCOLOR_GREEN,
+        PALETTE_SUPERCOLOR_YELLOW,
+        PALETTE_SUPERCOLOR_ORANGE,
+        PALETTE_SUPERCOLOR_RED,
+        PALETTE_SUPERCOLOR_WHITE,
+        PALETTE_SUPERCOLOR_BLACK,
     };
     return vcr_color_palette;
 }

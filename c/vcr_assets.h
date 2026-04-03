@@ -7,6 +7,25 @@
 #include <SDL2/SDL_ttf.h>
 
 
+const SDL_Color PALETTE_SUPERCOLOR_BLUE     = {0x03, 0x8D, 0xAE};
+const SDL_Color PALETTE_SUPERCOLOR_GREEN    = {0x8E, 0xA4, 0x3B};
+const SDL_Color PALETTE_SUPERCOLOR_YELLOW   = {0xE9, 0xBD, 0x01};
+const SDL_Color PALETTE_SUPERCOLOR_ORANGE   = {0xF2, 0x47, 0x01};
+const SDL_Color PALETTE_SUPERCOLOR_RED      = {0xF8, 0x01, 0x50};
+const SDL_Color PALETTE_SUPERCOLOR_WHITE    = {0xE8, 0xE1, 0xD6};
+const SDL_Color PALETTE_SUPERCOLOR_BLACK    = {0x18, 0x18, 0x18};
+
+const SDL_Color PALETTE_DYNAMICRON_YELLOW   = {0xFD, 0xC3, 0x31};
+const SDL_Color PALETTE_DYNAMICRON_ORANGE   = {0xFE, 0x57, 0x22};
+const SDL_Color PALETTE_DYNAMICRON_RED      = {0xF0, 0x35, 0x3C};
+const SDL_Color PALETTE_DYNAMICRON_DARK_RED = {0xB4, 0x21, 0x3D};
+const SDL_Color PALETTE_DYNAMICRON_PURPLE   = {0x67, 0x1C, 0x3B};
+const SDL_Color PALETTE_DYNAMICRON_WHITE    = {0xFF, 0xFF, 0xFF};
+const SDL_Color PALETTE_DYNAMICRON_BLACK    = {0x1A, 0x1A, 0x1A};
+
+const SDL_Color PALETTE_LCD_BLUE_DIM        = {0x1A, 0xFD, 0xD7, 0xff};
+const SDL_Color PALETTE_LCD_BLUE_BRIGHT     = {0xBD, 0xFF, 0xFD, 0xff};
+
 typedef struct PlayArrowGlyph {
     SDL_Vertex layer0[3];
     SDL_Vertex layer1[3];
