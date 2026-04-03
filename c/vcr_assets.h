@@ -5,26 +5,32 @@
 #include <SDL2/SDL_rect.h>
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_ttf.h>
+#include <math.h>
 
+const SDL_Color PALETTE_SUPERCOLOR_BLUE     = {0x03, 0x8D, 0xAE, 0xFF};
+const SDL_Color PALETTE_SUPERCOLOR_GREEN    = {0x8E, 0xA4, 0x3B, 0xFF};
+const SDL_Color PALETTE_SUPERCOLOR_YELLOW   = {0xE9, 0xBD, 0x01, 0xFF};
+const SDL_Color PALETTE_SUPERCOLOR_ORANGE   = {0xF2, 0x47, 0x01, 0xFF};
+const SDL_Color PALETTE_SUPERCOLOR_RED      = {0xF8, 0x01, 0x50, 0xFF};
+const SDL_Color PALETTE_SUPERCOLOR_WHITE    = {0xE8, 0xE1, 0xD6, 0xFF};
+const SDL_Color PALETTE_SUPERCOLOR_BLACK    = {0x18, 0x18, 0x18, 0xFF};
 
-const SDL_Color PALETTE_SUPERCOLOR_BLUE     = {0x03, 0x8D, 0xAE};
-const SDL_Color PALETTE_SUPERCOLOR_GREEN    = {0x8E, 0xA4, 0x3B};
-const SDL_Color PALETTE_SUPERCOLOR_YELLOW   = {0xE9, 0xBD, 0x01};
-const SDL_Color PALETTE_SUPERCOLOR_ORANGE   = {0xF2, 0x47, 0x01};
-const SDL_Color PALETTE_SUPERCOLOR_RED      = {0xF8, 0x01, 0x50};
-const SDL_Color PALETTE_SUPERCOLOR_WHITE    = {0xE8, 0xE1, 0xD6};
-const SDL_Color PALETTE_SUPERCOLOR_BLACK    = {0x18, 0x18, 0x18};
+const SDL_Color PALETTE_DYNAMICRON_YELLOW   = {0xFD, 0xC3, 0x31, 0xFF};
+const SDL_Color PALETTE_DYNAMICRON_ORANGE   = {0xFE, 0x57, 0x22, 0xFF};
+const SDL_Color PALETTE_DYNAMICRON_RED      = {0xF0, 0x35, 0x3C, 0xFF};
+const SDL_Color PALETTE_DYNAMICRON_DARK_RED = {0xB4, 0x21, 0x3D, 0xFF};
+const SDL_Color PALETTE_DYNAMICRON_PURPLE   = {0x67, 0x1C, 0x3B, 0xFF};
+const SDL_Color PALETTE_DYNAMICRON_WHITE    = {0xFF, 0xFF, 0xFF, 0xFF};
+const SDL_Color PALETTE_DYNAMICRON_BLACK    = {0x1A, 0x1A, 0x1A, 0xFF};
 
-const SDL_Color PALETTE_DYNAMICRON_YELLOW   = {0xFD, 0xC3, 0x31};
-const SDL_Color PALETTE_DYNAMICRON_ORANGE   = {0xFE, 0x57, 0x22};
-const SDL_Color PALETTE_DYNAMICRON_RED      = {0xF0, 0x35, 0x3C};
-const SDL_Color PALETTE_DYNAMICRON_DARK_RED = {0xB4, 0x21, 0x3D};
-const SDL_Color PALETTE_DYNAMICRON_PURPLE   = {0x67, 0x1C, 0x3B};
-const SDL_Color PALETTE_DYNAMICRON_WHITE    = {0xFF, 0xFF, 0xFF};
-const SDL_Color PALETTE_DYNAMICRON_BLACK    = {0x1A, 0x1A, 0x1A};
+const SDL_Color PALETTE_LCD_BACKGROUND      = {0x00, 0x00, 0x00, 0xFF};
+const SDL_Color PALETTE_LCD_BLUE_DIM        = {0x1A, 0xFD, 0xD7, 0xFF};
+const SDL_Color PALETTE_LCD_BLUE_BRIGHT     = {0xBD, 0xFF, 0xFD, 0xFF};
+// Inactive bright and dim are flipped here on purpose
+const SDL_Color PALETTE_LCD_INACTIVE_DIM    = {0x3A, 0x3A, 0x3A, 0xFF};
+const SDL_Color PALETTE_LCD_INACTIVE_BRIGHT = {0x25, 0x25, 0x25, 0xFF};
 
-const SDL_Color PALETTE_LCD_BLUE_DIM        = {0x1A, 0xFD, 0xD7, 0xff};
-const SDL_Color PALETTE_LCD_BLUE_BRIGHT     = {0xBD, 0xFF, 0xFD, 0xff};
+const SDL_Color PALETTE_CLEAR               = {0xFF, 0xFF, 0xFF, 0x00};
 
 typedef struct PlayArrowGlyph {
     SDL_Vertex layer0[3];
@@ -101,12 +107,12 @@ SDL_Texture *create_pause_bar_glyph(SDL_Renderer *renderer, int tex_width, int t
     float width = glyph_width * 0.25;
     float outline_width = width * 0.25;
 
-    SDL_Color color_dim = {0x1A, 0xFD, 0xD7, 0xff};
-    SDL_Color color_bright = {0xBD, 0xFF, 0xFD, 0xff};
+    SDL_Color color_dim = PALETTE_LCD_BLUE_DIM;
+    SDL_Color color_bright = PALETTE_LCD_BLUE_BRIGHT;
     color_dim = color_bright; // TODO: small glyphs arent nesting well so one color
     if (!active) {
-        color_dim = (SDL_Color){0x25, 0x25, 0x25, 0xff};
-        color_bright = (SDL_Color){0x25, 0x25, 0x25, 0xff};
+        color_dim = PALETTE_LCD_INACTIVE_BRIGHT;
+        color_bright = PALETTE_LCD_INACTIVE_BRIGHT;
     }
 
     float layer2_delta = width - outline_width;
@@ -189,14 +195,14 @@ SDL_Texture *create_play_arrow_glyph_texture(SDL_Renderer *renderer, int width, 
     SDL_SetRenderTarget(renderer, target);
     SDL_SetTextureBlendMode(target, SDL_BLENDMODE_BLEND);
 
-    SDL_Color color_annulus   = {0xff, 0xff, 0xff, 0x00};
-    SDL_Color color_dim       = {0x1A, 0xFD, 0xD7, 0xff};
-    SDL_Color color_bright    = {0xBD, 0xFF, 0xFD, 0xff};
+    SDL_Color color_annulus   = PALETTE_CLEAR;
+    SDL_Color color_dim       = PALETTE_LCD_BLUE_DIM;
+    SDL_Color color_bright    = PALETTE_LCD_BLUE_BRIGHT;
 
     color_dim = color_bright; // TODO: small glyphs arent nesting well so one color
     if (!active) {
-        color_dim    = (SDL_Color){0x25, 0x25, 0x25, 0xff};
-        color_bright = (SDL_Color){0x25, 0x25, 0x25, 0xff};
+        color_dim    = PALETTE_LCD_INACTIVE_BRIGHT;
+        color_bright = PALETTE_LCD_INACTIVE_BRIGHT;
     }
 
     PlayArrow base_layer       = build_play_arrow(width, height);

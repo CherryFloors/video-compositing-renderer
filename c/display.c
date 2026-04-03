@@ -13,7 +13,6 @@
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_video.h>
-#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <sys/time.h>
@@ -161,16 +160,16 @@ void render_videoscreen(VcrApplication *vcr_display, SDL_Rect screen) {
 
     // render_visual_static(vcr_display, screen);
     SDL_SetRenderDrawBlendMode(vcr_display->renderer, reset_blend_mode);
-    SDL_SetRenderDrawColor(vcr_display->renderer, 0x1A, 0xFD, 0xD7, 0xFF);
+    // SDL_SetRenderDrawColor(vcr_display->renderer, 0x1A, 0xFD, 0xD7, 0xFF);
     SDL_RenderFillRect(vcr_display->renderer, &screen);
 }
 
 SDL_Texture *create_digital_display_symbol(VcrApplication *vcr_display, const char *text, bool active) {
 
-    SDL_Color active_base_color = {0x1A, 0xFD, 0xD7};
-    SDL_Color active_bright_color = {0xBD, 0xFF, 0xFD};
-    SDL_Color inactive_base_color = {0x3A, 0x3A, 0x3A};
-    SDL_Color inactive_bright_color = {0x25, 0x25, 0x25};
+    SDL_Color active_base_color     = PALETTE_LCD_BLUE_DIM;
+    SDL_Color active_bright_color   = PALETTE_LCD_BLUE_BRIGHT;
+    SDL_Color inactive_base_color   = PALETTE_LCD_INACTIVE_DIM;
+    SDL_Color inactive_bright_color = PALETTE_LCD_INACTIVE_BRIGHT;
 
     if (active) {
         return create_glow_text_two_layer(vcr_display->renderer, vcr_display->font_default, text, active_base_color, active_bright_color, true, true);
@@ -195,11 +194,10 @@ SDL_Texture *render_digital_display(VcrApplication *vcr_display, DigitalDisplayS
     SDL_Texture *texture_glyph_rew;
     SDL_Texture *texture_pause_glyph;
 
-    SDL_Color display_background = {0x00, 0x00, 0x00};
-    SDL_Color active_base_color = {0x1A, 0xFD, 0xD7};
-    SDL_Color active_bright_color = {0xBD, 0xFF, 0xFD};
-    SDL_Color inactive_base_color = {0x3A, 0x3A, 0x3A};
-    SDL_Color inactive_bright_color = {0x25, 0x25, 0x25};
+    SDL_Color active_base_color     = PALETTE_LCD_BLUE_DIM;
+    SDL_Color active_bright_color   = PALETTE_LCD_BLUE_BRIGHT;
+    SDL_Color inactive_base_color   = PALETTE_LCD_INACTIVE_DIM;
+    SDL_Color inactive_bright_color = PALETTE_LCD_INACTIVE_BRIGHT;
 
     char fmt_channel[3];
     char fmt_clock[6];
