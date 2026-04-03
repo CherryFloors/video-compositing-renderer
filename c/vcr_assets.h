@@ -13,6 +13,12 @@ typedef struct PlayArrowGlyph {
     SDL_Vertex layer3[3];
 } PlayArrowGlyph;
 
+typedef struct PlayArrow {
+    SDL_Vertex top;
+    SDL_Vertex bottom;
+    SDL_Vertex point;
+} PlayArrow;
+
 typedef struct PauseBarGlyph {
     SDL_Rect layer0;
     SDL_Rect layer1;
@@ -46,6 +52,9 @@ typedef struct VcrColorPalette {
 } VcrColorPalette;
 
 SDL_Texture *create_pause_bar_glyph(SDL_Renderer *renderer, int tex_width, int tex_height, bool active);
+SDL_Texture *create_play_arrow_glyph_texture(SDL_Renderer *renderer, int width, int height, bool active);
+PlayArrow build_play_arrow(int width, int height);
+PlayArrow annular_play_arrow(PlayArrow play_arrow, float delta);
 
 #ifdef VCR_ASSETS_IMPLEMENTATION
 
@@ -97,6 +106,90 @@ SDL_Texture *create_pause_bar_glyph(SDL_Renderer *renderer, int tex_width, int t
     SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0x00);
     SDL_RenderFillRectF(renderer, &layer3);
 
+    SDL_SetRenderTarget(renderer, NULL);
+
+    return target;
+}
+
+PlayArrow build_play_arrow(int width, int height) {
+
+    PlayArrow play_arrow;
+
+    float x                    = (float)width;
+    float y                    = (float)height;
+    float mid_point            = y / 2.0;
+
+    SDL_FPoint top_position    = { 0.0,        0.0};
+    SDL_FPoint bottom_position = { 0.0,         y };
+    SDL_FPoint point_position  = {   x, mid_point };
+
+    play_arrow.top.position    = top_position;
+    play_arrow.bottom.position = bottom_position;
+    play_arrow.point.position  = point_position;
+
+    return play_arrow;
+}
+
+PlayArrow annular_play_arrow(PlayArrow play_arrow, float delta) {
+
+    PlayArrow annular_arrow;
+
+    double half_height = play_arrow.point.position.y - play_arrow.top.position.y;
+    double arrow_width = play_arrow.point.position.x - play_arrow.top.position.x;
+
+    if (delta >= (arrow_width / 2.0)) {
+        delta = arrow_width / 2.0;
+    }
+
+    double slope                     = half_height / arrow_width;
+    double top_to_point_length       = sqrt(half_height * half_height + arrow_width * arrow_width);
+    double tangent_of_top_half_angle = (top_to_point_length - half_height) / arrow_width;
+    double delta_y_factor            = delta / tangent_of_top_half_angle;
+
+    float top_x    = play_arrow.top.position.x + delta;
+    float top_y    = play_arrow.top.position.y + delta_y_factor;
+    float bottom_x = top_x;
+    float bottom_y = play_arrow.bottom.position.y - delta_y_factor;
+    float point_x  = ((half_height - top_y) / slope) + top_x;
+    float point_y  = play_arrow.point.position.y;
+
+    annular_arrow.top.position    = (SDL_FPoint){    top_x,    top_y };
+    annular_arrow.bottom.position = (SDL_FPoint){ bottom_x, bottom_y };
+    annular_arrow.point.position  = (SDL_FPoint){  point_x,  point_y };
+
+    return annular_arrow;
+}
+
+SDL_Texture *create_play_arrow_glyph_texture(SDL_Renderer *renderer, int width, int height, bool active) {
+
+    SDL_Texture *target = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, width, height);
+
+    SDL_SetRenderTarget(renderer, target);
+    SDL_SetTextureBlendMode(target, SDL_BLENDMODE_BLEND);
+
+    SDL_Color color_annulus   = {0xff, 0xff, 0xff, 0x00};
+    SDL_Color color_dim       = {0x1A, 0xFD, 0xD7, 0xff};
+    SDL_Color color_bright    = {0xBD, 0xFF, 0xFD, 0xff};
+
+    color_dim = color_bright; // TODO: small glyphs arent nesting well so one color
+    if (!active) {
+        color_dim    = (SDL_Color){0x25, 0x25, 0x25, 0xff};
+        color_bright = (SDL_Color){0x25, 0x25, 0x25, 0xff};
+    }
+
+    PlayArrow base_layer       = build_play_arrow(width, height);
+    base_layer.top.color       = color_dim;
+    base_layer.bottom.color    = color_dim;
+    base_layer.point.color     = color_dim;
+
+    float delta                = (float)width / 4.0;
+    PlayArrow annular_layer    = annular_play_arrow(base_layer, delta);
+    annular_layer.top.color    = color_annulus;
+    annular_layer.bottom.color = color_annulus;
+    annular_layer.point.color  = color_annulus;
+    
+    SDL_RenderGeometry(renderer, NULL, &base_layer, 3, NULL, 0);
+    SDL_RenderGeometry(renderer, NULL, &annular_layer, 3, NULL, 0);
     SDL_SetRenderTarget(renderer, NULL);
 
     return target;
