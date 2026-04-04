@@ -264,12 +264,12 @@ SDL_Texture *render_digital_display(VcrApplication *vcr_display, DigitalDisplayS
     int bottom_symbol_space = (top_row_width - bottom_row_width) / 3;
     int bottom_row_y = container_clock.h + 10;
 
-    SDL_Rect container_rew1 =   { 0, bottom_row_y, play_glyph_width, glyph_height };
-    SDL_Rect container_rew2 =   { 0, bottom_row_y, play_glyph_width, glyph_height };
+    SDL_Rect container_rew1   = { 0, bottom_row_y,      play_glyph_width, glyph_height };
+    SDL_Rect container_rew2   = { 0, bottom_row_y,      play_glyph_width, glyph_height };
     SDL_Rect container_pause1 = { 0, bottom_row_y, pause_bar_glyph_width, glyph_height };
     SDL_Rect container_pause2 = { 0, bottom_row_y, pause_bar_glyph_width, glyph_height };
-    SDL_Rect container_play =   { 0, bottom_row_y, play_glyph_width, glyph_height };
-    SDL_Rect container_ff =     { 0, bottom_row_y, play_glyph_width, glyph_height };
+    SDL_Rect container_play   = { 0, bottom_row_y,      play_glyph_width, glyph_height };
+    SDL_Rect container_ff     = { 0, bottom_row_y,      play_glyph_width, glyph_height };
 
     container_clock.x = 0;
     container_clock.y = 0;

@@ -1,11 +1,13 @@
 #pragma once
+#include <stdlib.h>
+#include <stdbool.h>
+#include <math.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_blendmode.h>
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_rect.h>
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_ttf.h>
-#include <math.h>
 
 const SDL_Color PALETTE_SUPERCOLOR_BLUE     = {0x03, 0x8D, 0xAE, 0xFF};
 const SDL_Color PALETTE_SUPERCOLOR_GREEN    = {0x8E, 0xA4, 0x3B, 0xFF};
@@ -67,6 +69,23 @@ typedef struct DigitalDisplayState {
     bool rewind;
 } DigitalDisplayState;
 
+typedef struct DigitalDisplay {
+    SDL_Rect clock;
+    SDL_Rect channel;
+    SDL_Rect pm;
+    SDL_Rect am;
+    SDL_Rect vcr;
+    SDL_Rect rec;
+    SDL_Rect hifi;
+    SDL_Rect play;
+    SDL_Rect ff;
+    SDL_Rect rew;
+    SDL_Rect glyph;
+    SDL_Rect container;
+    SDL_Texture *active;
+    SDL_Texture *inactive;
+} DigitalDisplay;
+
 typedef struct VcrColorPalette {
     SDL_Color c0;
     SDL_Color c1;
@@ -82,9 +101,25 @@ PlayArrow annular_play_arrow(PlayArrow play_arrow, float delta);
 SDL_Texture *create_pause_bar_glyph(SDL_Renderer *renderer, int tex_width, int tex_height, bool active);
 SDL_Texture *create_play_arrow_glyph_texture(SDL_Renderer *renderer, int width, int height, bool active);
 SDL_Texture *create_glow_text_two_layer(SDL_Renderer *renderer, TTF_Font *font, const char *text, SDL_Color base_color, SDL_Color bright_color, bool alpha, bool small_font);
+DigitalDisplay *create_digital_display(SDL_Renderer *renderer);
+void destroy_digital_display(DigitalDisplay *digital_display);
 
-#define VCR_ASSETS_IMPLEMENTATION
 #ifdef VCR_ASSETS_IMPLEMENTATION
+
+DigitalDisplay *create_digital_display(SDL_Renderer *renderer) {
+    DigitalDisplay *digital_display = malloc(sizeof(DigitalDisplay));
+    digital_display->active =
+        SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 100, 100);
+    digital_display->inactive =
+        SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 100, 100);
+    return digital_display;
+}
+
+void destroy_digital_display(DigitalDisplay *digital_display) {
+    SDL_DestroyTexture(digital_display->active);
+    SDL_DestroyTexture(digital_display->inactive);
+    free(digital_display);
+};
 
 SDL_Texture *create_pause_bar_glyph(SDL_Renderer *renderer, int tex_width, int tex_height, bool active) {
 
