@@ -16,6 +16,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <sys/time.h>
+#include <time.h>
 #include <unistd.h>
 
 #define VCR_ASSETS_IMPLEMENTATION
@@ -287,6 +288,44 @@ bool handle_event(SDL_Event *event, VcrApplication *vcr_app) {
     return (should_quit);
 }
 
+void set_clock_hour_and_am_pm_from_24_hour_fmt(int hour_24_fmt, DigitalDisplayState *digital_display_state) {
+
+    int hour = hour_24_fmt;
+    digital_display_state->am = true;
+    digital_display_state->pm = false;
+
+    if (hour >= 12) {
+        hour = hour - 12;
+        digital_display_state->am = false;
+        digital_display_state->pm = true;
+    }
+
+    if (hour == 0) {
+        hour = 12;
+    }
+
+    digital_display_state->hour = hour;
+}
+
+bool update_digital_clock_and_check_for_redraw(DigitalDisplayState *digital_display_state) {
+
+    bool redraw = false;
+    time_t now = time(NULL);
+    struct tm *current_time = localtime(&now);
+
+    if (current_time->tm_hour != digital_display_state->hour) {
+        redraw = true;
+        set_clock_hour_and_am_pm_from_24_hour_fmt(current_time->tm_hour, digital_display_state);
+    }
+
+    if (current_time->tm_min != digital_display_state->minute) {
+        redraw = true;
+        digital_display_state->minute = current_time->tm_min;
+    }
+
+    return redraw;
+}
+
 int run_display_loop(void) {
 
     VcrApplication vcr_app;
@@ -299,6 +338,7 @@ int run_display_loop(void) {
 
     standby_screen(&vcr_app, default_color_palette(), false);
     render_videoscreen(&vcr_app, vcr_app.video_screen);
+    bool redraw_digital_display = update_digital_clock_and_check_for_redraw(&vcr_app.digital_display_state);
     draw_digital_display(vcr_app.renderer, vcr_app.font_digital_clock_7seg, vcr_app.digital_display, &vcr_app.digital_display_state);
 
     bool running = true;
@@ -315,6 +355,12 @@ int run_display_loop(void) {
 
         render_visual_static(&vcr_app, vcr_app.video_screen);
         SDL_RenderPresent(vcr_app.renderer);
+
+        // TODO: dont check this 24 times a second...
+        redraw_digital_display = update_digital_clock_and_check_for_redraw(&vcr_app.digital_display_state);
+        if (redraw_digital_display) {
+            draw_digital_display(vcr_app.renderer, vcr_app.font_digital_clock_7seg, vcr_app.digital_display, &vcr_app.digital_display_state);
+        }
 
         int frame_time = SDL_GetTicks() - frame_start;
         if (FRAME_DELAY > frame_time) {

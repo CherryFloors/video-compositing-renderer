@@ -1,5 +1,4 @@
 # In Progress
-- animate digital display clock by checking time
 
 # TODO
 - store all routines that render an asset to a texture or display in vcr_assets.h
@@ -9,6 +8,7 @@
 - Refactor the static generator so its a renderer and not a texture generator similar to render_video_frame.
 - Need a way to generalize layouts as structs
 - Need a way to implement transition routines to animate layouts
+- Enable queueing videos and standby
 
 # DONE
 - Create a .clangd file to treat .h as .c and define them impl guards so lsp doesnt gray out impls
@@ -17,3 +17,4 @@
 - create and destroy routines for new digital display struct
 - digital display renderer to draw display given a state struct
 - add display to vcr app struct and rename vcr app variables
+- animate digital display clock by checking time
