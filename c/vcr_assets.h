@@ -189,11 +189,6 @@ void draw_digital_display(SDL_Renderer *renderer, TTF_Font *font, DigitalDisplay
     if (digital_display_state->rewind) {
         render_copy_relative(renderer, digital_display->active, &digital_display->rew, &digital_display->container);
     }
-
-    // SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-    // SDL_RenderDrawRect(renderer, &digital_display->pause);
-    // SDL_RenderDrawRect(renderer, &digital_display->channel);
-
 }
 
 DigitalDisplayTextures *create_digital_display_textures(SDL_Renderer *renderer, TTF_Font *clock_font, TTF_Font *symbol_font, bool active) {

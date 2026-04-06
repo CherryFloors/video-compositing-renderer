@@ -1,5 +1,4 @@
 # In Progress
-- add display to vcr app struct and rename vcr app variables
 - animate digital display clock by checking time
 
 # TODO
@@ -17,3 +16,4 @@
 - refactor digital display symbol texture creator to set container(rect) and return texture and not require app. Move to assets
 - create and destroy routines for new digital display struct
 - digital display renderer to draw display given a state struct
+- add display to vcr app struct and rename vcr app variables
