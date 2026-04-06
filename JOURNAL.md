@@ -1,4 +1,5 @@
 # In Progress
+- refactor digital display symbol texture creator to set container(rect) and return texture and not require app. Move to assets
 - create and destroy routines for new digital display struct
 
 # TODO

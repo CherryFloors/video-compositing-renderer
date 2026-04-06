@@ -164,20 +164,6 @@ void render_videoscreen(VcrApplication *vcr_display, SDL_Rect screen) {
     SDL_RenderFillRect(vcr_display->renderer, &screen);
 }
 
-SDL_Texture *create_digital_display_symbol(VcrApplication *vcr_display, const char *text, bool active) {
-
-    SDL_Color active_base_color     = PALETTE_LCD_BLUE_DIM;
-    SDL_Color active_bright_color   = PALETTE_LCD_BLUE_BRIGHT;
-    SDL_Color inactive_base_color   = PALETTE_LCD_INACTIVE_DIM;
-    SDL_Color inactive_bright_color = PALETTE_LCD_INACTIVE_BRIGHT;
-
-    if (active) {
-        return create_glow_text_two_layer(vcr_display->renderer, vcr_display->font_default, text, active_base_color, active_bright_color, true, true);
-    } else {
-        return create_glow_text_two_layer(vcr_display->renderer, vcr_display->font_default, text, inactive_base_color, inactive_bright_color, true, false);
-    }
-}
-
 SDL_Texture *render_digital_display(VcrApplication *vcr_display, DigitalDisplayState *display_state) {
 
     SDL_Texture *texture_inactive_clock;
@@ -211,11 +197,11 @@ SDL_Texture *render_digital_display(VcrApplication *vcr_display, DigitalDisplayS
     texture_inactive_channel = create_glow_text_two_layer(vcr_display->renderer, vcr_display->font_digital_clock_7seg, "88", inactive_base_color, inactive_bright_color, false, false);
     texture_active_clock = create_glow_text_two_layer(vcr_display->renderer, vcr_display->font_digital_clock_7seg, fmt_clock, active_base_color, active_bright_color, true, false);
     texture_active_channel = create_glow_text_two_layer(vcr_display->renderer, vcr_display->font_digital_clock_7seg, fmt_channel, active_base_color, active_bright_color, true, false);
-    texture_symbol_pm = create_digital_display_symbol(vcr_display, " PM ", display_state->pm);
-    texture_symbol_am = create_digital_display_symbol(vcr_display, " AM ", display_state->am);
-    texture_symbol_vcr = create_digital_display_symbol(vcr_display, "VCR", display_state->vcr);
-    texture_symbol_rec = create_digital_display_symbol(vcr_display, "REC", display_state->rec);
-    texture_symbol_hifi = create_digital_display_symbol(vcr_display, "Hi-Fi", display_state->hifi);
+    texture_symbol_pm = create_digital_display_symbol(vcr_display->renderer, vcr_display->font_default, " PM ", display_state->pm);
+    texture_symbol_am = create_digital_display_symbol(vcr_display->renderer, vcr_display->font_default, " AM ", display_state->am);
+    texture_symbol_vcr = create_digital_display_symbol(vcr_display->renderer, vcr_display->font_default, "VCR", display_state->vcr);
+    texture_symbol_rec = create_digital_display_symbol(vcr_display->renderer, vcr_display->font_default, "REC", display_state->rec);
+    texture_symbol_hifi = create_digital_display_symbol(vcr_display->renderer, vcr_display->font_default, "Hi-Fi", display_state->hifi);
 
     SDL_Rect container_clock;
     SDL_Rect container_channel;
@@ -471,11 +457,69 @@ int run_display_loop(void) {
     const int FRAME_DELAY = 1000 / TARGET_FPS;
 
     standby_screen(&vcr_display, default_color_palette(), false);
-    render_videoscreen(&vcr_display, video_screen);
+    // render_videoscreen(&vcr_display, video_screen);
      
     SDL_Texture *tex = render_digital_display(&vcr_display, &display_state);
     SDL_Rect digital_display_container = { 150, 300, 0, 0 };
     SDL_QueryTexture(tex, NULL, NULL, &digital_display_container.w, &digital_display_container.h);
+
+
+    display_state = (DigitalDisplayState){
+        88,
+        88,
+        88,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+    };
+    SDL_Texture *tex2 = render_digital_display(&vcr_display, &display_state);
+
+    SDL_Rect digi_inactive = { 150, 300, 0, 0 };
+    SDL_Rect digi_active = { 150, 300, 0, 0 };
+    SDL_Rect digi_drawn = { 150, 300, 0, 0 };
+    SDL_QueryTexture(tex2, NULL, NULL, &digi_active.w, &digi_active.h);
+    DigitalDisplay *digi = create_digital_display(vcr_display.renderer, vcr_display.font_digital_clock_7seg, vcr_display.font_default);
+
+    digi_drawn.y = digital_display_container.y - (5 + digital_display_container.h);
+    digi_drawn.w = digi->container.w;
+    digi_drawn.h = digi->container.h;
+    digi_active.y = digi_drawn.y - (5 + digi_drawn.h);
+    digi_active.w = digi->container.w;
+    digi_active.h = digi->container.h;
+    digi_inactive.y = digi_active.y - (5 + digi_active.h);
+    digi_inactive.w = digi->container.w;
+    digi_inactive.h = digi->container.h;
+
+    SDL_RenderCopy(vcr_display.renderer, tex2, NULL, &digi_active);
+    SDL_RenderCopy(vcr_display.renderer, digi->inactive, NULL, &digi_inactive);
+    SDL_RenderCopy(vcr_display.renderer, digi->active, NULL, &digi_inactive);
+
+    display_state = (DigitalDisplayState){
+        2,
+        0,
+        4,
+        false,
+        true,
+        true,
+        true,
+        false,
+        true,
+        true,
+        false,
+        false,
+    };
+    display_state.fast_forward = false;
+    display_state.play = true;
+    digi->container.x = digi_drawn.x;
+    digi->container.y = digi_drawn.y;
+    draw_digital_display(vcr_display.renderer, vcr_display.font_digital_clock_7seg, digi, &display_state);
+
     SDL_RenderCopy(vcr_display.renderer, tex, NULL, &digital_display_container);
     SDL_DestroyTexture(tex);
 
@@ -491,7 +535,7 @@ int run_display_loop(void) {
             }
         }
 
-        render_visual_static(&vcr_display, video_screen);
+        // render_visual_static(&vcr_display, video_screen);
         SDL_RenderPresent(vcr_display.renderer);
 
         int frame_time = SDL_GetTicks() - frame_start;
