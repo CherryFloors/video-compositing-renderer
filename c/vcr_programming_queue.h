@@ -26,32 +26,45 @@ typedef struct {
     int write_index;
 } ProgrammingQueue;
 
-void safe_copy_program(Program *dest, Program *src) { strncpy(dest->url, src->url, MAX_STRING_LENGTH); }
-
+void safe_copy_program(Program *dest, Program *src);
 /*
  * Function to initialize the queue. Can be used to reset/clear the queue
  */
+void initialize_queue(ProgrammingQueue *q);
+/*
+ * Function to check if the queue is empty
+ */
+bool is_empty(ProgrammingQueue *q);
+/*
+ * Function to check if the queue is full
+ */
+bool is_full(ProgrammingQueue *q);
+/*
+ * Enqueues the given void* element at the back of this Queue.
+ * Returns true on success and false on enq failure when element is NULL or
+ * queue is full.
+ */
+EnqueueCode enqueue(ProgrammingQueue *q, Program *program_p);
+/*
+ * Some Docs...
+ */
+bool dequeue(ProgrammingQueue *q, Program *program_p);
+
+
+#ifdef VCR_PROGRAMMING_QUEUE
+
+void safe_copy_program(Program *dest, Program *src) { strncpy(dest->url, src->url, MAX_STRING_LENGTH); }
+
 void initialize_queue(ProgrammingQueue *q) {
     q->buffer_length = 0;
     q->read_index = 0;
     q->write_index = 0;
 }
 
-/*
- * Function to check if the queue is empty
- */
 bool is_empty(ProgrammingQueue *q) { return q->buffer_length == 0; }
 
-/*
- * Function to check if the queue is full
- */
 bool is_full(ProgrammingQueue *q) { return q->buffer_length == BUFFER_SIZE; }
 
-/*
- * Enqueues the given void* element at the back of this Queue.
- * Returns true on success and false on enq failure when element is NULL or
- * queue is full.
- */
 EnqueueCode enqueue(ProgrammingQueue *q, Program *program_p) {
     if (is_full(q)) {
         return FAIL_QUEUE_FULL;
@@ -68,9 +81,6 @@ EnqueueCode enqueue(ProgrammingQueue *q, Program *program_p) {
     return SUCCESS;
 }
 
-/*
- * Some Docs...
- */
 bool dequeue(ProgrammingQueue *q, Program *program_p) {
     if (is_empty(q)) {
         return false;
@@ -82,3 +92,4 @@ bool dequeue(ProgrammingQueue *q, Program *program_p) {
 
     return true;
 };
+#endif 

@@ -1,4 +1,4 @@
 If:
   PathMatch: .*\.h
 CompileFlags:
-  Add: [-xc, -DVCR_ASSETS_IMPLEMENTATION]
+  Add: [-xc, -DVCR_ASSETS_IMPLEMENTATION, -DVCR_PROGRAMMING_QUEUE]

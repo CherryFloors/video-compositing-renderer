@@ -2,8 +2,9 @@
 #include <python3.12/longobject.h>
 #include <python3.12/unicodeobject.h>
 
+#define VCR_PROGRAMMING_QUEUE
+#include "vcr_programming_queue.h"
 #include "display.c"
-#include "programming_queue.c"
 
 ProgrammingQueue programming_queue;
 
@@ -23,6 +24,10 @@ static PyObject *_enqueue_program(PyObject *self, PyObject *args) {
     /* Parse arguments */
     if (!PyArg_ParseTuple(args, "s", &program_url)) {
         return NULL;
+    }
+
+    if (strlen(program_url) >= MAX_STRING_LENGTH) {
+        return PyLong_FromLong(FAIL_URL_LENGTH);
     }
 
     strncpy(program.url, program_url, MAX_STRING_LENGTH);
