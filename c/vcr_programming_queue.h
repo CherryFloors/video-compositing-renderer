@@ -51,7 +51,7 @@ EnqueueCode enqueue(ProgrammingQueue *q, Program *program_p);
 bool dequeue(ProgrammingQueue *q, Program *program_p);
 
 
-#ifdef VCR_PROGRAMMING_QUEUE
+#ifdef VCR_PROGRAMMING_QUEUE_IMPLEMENTATION
 
 void safe_copy_program(Program *dest, Program *src) { strncpy(dest->url, src->url, MAX_STRING_LENGTH); }
 

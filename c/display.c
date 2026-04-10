@@ -13,6 +13,7 @@
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_video.h>
+#include <mpv/client.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <sys/time.h>
@@ -21,7 +22,8 @@
 
 #define VCR_ASSETS_IMPLEMENTATION
 #include "vcr_assets.h"
-
+#define VIDEO_PLAYER_IMPLEMENTATION
+#include "video_player.h"
 
 typedef enum DisplayResolution {
     RESOULUTION_SD_640_480,
@@ -38,10 +40,19 @@ typedef struct VcrApplication {
     SDL_Rect info_container;
     DigitalDisplay *digital_display;
     DigitalDisplayState digital_display_state;
+    VideoPlayerContext video_player;
 } VcrApplication;
 
+typedef enum VcrEvent {
+    VCR_EVENT_NONE      = 0,
+    VCR_EVENT_QUIT      = 1,
+    VCR_EVENT_VIDEO_END = 2,
+} VcrEvent;
 
 int init_vcr_application(VcrApplication *vcr_app) {
+
+    // TODO: Do I need this?
+    SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         printf("Failed to init SDL\n");
@@ -87,6 +98,8 @@ int init_vcr_application(VcrApplication *vcr_app) {
         0, 0, 3, false, false, true, false, false, false, false, false, false,
     };
 
+    init_video_player(&vcr_app->video_player, vcr_app->renderer, vcr_app->video_screen.w, vcr_app->video_screen.h);
+
     return 0;
 }
 
@@ -98,6 +111,7 @@ void destroy_vcr_application(VcrApplication *vcr_app) {
     TTF_CloseFont(vcr_app->font_digital_clock_7seg);
     TTF_CloseFont(vcr_app->font_default);
     destroy_digital_display(vcr_app->digital_display);
+    destroy_video_player(&vcr_app->video_player);
 
     vcr_app->window = NULL;
     vcr_app->renderer = NULL;
@@ -229,7 +243,7 @@ bool process_key_stroke(SDL_Keysym symbol) {
     return should_quit;
 }
 
-bool handle_event(SDL_Event *event, VcrApplication *vcr_app) {
+VcrEvent handle_event(SDL_Event *event, VcrApplication *vcr_app) {
 
     bool should_quit = false;
     int r, g, b;
@@ -283,9 +297,42 @@ bool handle_event(SDL_Event *event, VcrApplication *vcr_app) {
         printf("%f ms/frame  |  %f fps\n", elapsed_time, 1000.0 / elapsed_time);
 
         break;
+
+    default:
+        if(event->type == vcr_app->video_player.event_wakeup_on_mpv_render_update) {
+            render_video_frame(&vcr_app->video_player, vcr_app->renderer, &vcr_app->video_screen);
+        }
+
+        if (event->type == vcr_app->video_player.event_wakeup_on_mpv_events) {
+            // Handle all remaining mpv events.
+            while (1) {
+                mpv_event *mp_event = mpv_wait_event(vcr_app->video_player.mpv, 0);
+                if (mp_event->event_id == MPV_EVENT_NONE)
+                    break;
+                if (mp_event->event_id == MPV_EVENT_END_FILE) {
+                    return VCR_EVENT_VIDEO_END;
+                }
+                if (mp_event->event_id == MPV_EVENT_LOG_MESSAGE) {
+                    mpv_event_log_message *msg = mp_event->data;
+                    // Print log messages about DR allocations, just to
+                    // test whether it works. If there is more than 1 of
+                    // these, it works. (The log message can actually change
+                    // any time, so it's possible this logging stops working
+                    // in the future.)
+                    if (strstr(msg->text, "DR image"))
+                        printf("log: %s", msg->text);
+                    continue;
+                }
+                printf("event: %s\n", mpv_event_name(mp_event->event_id));
+            }
+        }
     }
 
-    return (should_quit);
+    if (should_quit) {
+        return VCR_EVENT_QUIT;
+    }
+
+    return VCR_EVENT_NONE;
 }
 
 void set_clock_hour_and_am_pm_from_24_hour_fmt(int hour_24_fmt, DigitalDisplayState *digital_display_state) {
@@ -326,7 +373,10 @@ bool update_digital_clock_and_check_for_redraw(DigitalDisplayState *digital_disp
     return redraw;
 }
 
+// TODO: Rename to start_engine(program_q)
 int run_display_loop(void) {
+
+    char *f1 = "";
 
     VcrApplication vcr_app;
     if (init_vcr_application(&vcr_app) != 0) {
@@ -341,15 +391,24 @@ int run_display_loop(void) {
     bool redraw_digital_display = update_digital_clock_and_check_for_redraw(&vcr_app.digital_display_state);
     draw_digital_display(vcr_app.renderer, vcr_app.font_digital_clock_7seg, vcr_app.digital_display, &vcr_app.digital_display_state);
 
+    // play_file(&vcr_app.video_player, f1);
+
     bool running = true;
+    bool play_2 = true;
     while (running) {
 
         int frame_start = SDL_GetTicks();
         SDL_Event Event;
         while (SDL_PollEvent(&Event)) {
 
-            if (handle_event(&Event, &vcr_app)) {
+            VcrEvent vcr_event = handle_event(&Event, &vcr_app);
+            if (vcr_event == VCR_EVENT_QUIT) {
                 running = false;
+            }
+
+            if (vcr_event == VCR_EVENT_VIDEO_END && play_2) {
+                play_2 = false;
+                // play_file(&vcr_app.video_player, f2);
             }
         }
 
