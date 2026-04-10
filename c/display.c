@@ -123,32 +123,6 @@ void destroy_vcr_application(VcrApplication *vcr_app) {
     SDL_Quit();
 }
 
-VcrColorPalette default_color_palette(void) {
-    VcrColorPalette vcr_color_palette = {
-        PALETTE_DYNAMICRON_YELLOW,
-        PALETTE_DYNAMICRON_ORANGE,
-        PALETTE_DYNAMICRON_RED,
-        PALETTE_DYNAMICRON_DARK_RED,
-        PALETTE_DYNAMICRON_PURPLE,
-        PALETTE_DYNAMICRON_WHITE,
-        PALETTE_DYNAMICRON_YELLOW,
-    };
-    return vcr_color_palette;
-}
-
-VcrColorPalette supercolor_palette(void) {
-    VcrColorPalette vcr_color_palette = {
-        PALETTE_SUPERCOLOR_BLUE,
-        PALETTE_SUPERCOLOR_GREEN,
-        PALETTE_SUPERCOLOR_YELLOW,
-        PALETTE_SUPERCOLOR_ORANGE,
-        PALETTE_SUPERCOLOR_RED,
-        PALETTE_SUPERCOLOR_WHITE,
-        PALETTE_SUPERCOLOR_BLACK,
-    };
-    return vcr_color_palette;
-}
-
 void render_visual_static(VcrApplication *vcr_app, SDL_Rect screen) {
     SDL_Texture *static_texture = SDL_CreateTexture(vcr_app->renderer, SDL_PIXELFORMAT_RGBA8888,
                                                     SDL_TEXTUREACCESS_STATIC, screen.w, screen.h);

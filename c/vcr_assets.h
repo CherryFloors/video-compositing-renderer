@@ -98,6 +98,8 @@ typedef struct VcrColorPalette {
     SDL_Color text_bg;
 } VcrColorPalette;
 
+VcrColorPalette default_color_palette(void);
+VcrColorPalette supercolor_palette(void);
 PlayArrow build_play_arrow(int width, int height);
 PlayArrow annular_play_arrow(PlayArrow play_arrow, float delta);
 SDL_Texture *create_pause_bar_glyph(SDL_Renderer *renderer, int tex_width, int tex_height, bool active);
@@ -121,6 +123,32 @@ typedef struct DigitalDisplayTextures {
     SDL_Texture *play_arrow_glyph;
     SDL_Texture *pause_bar_glyph;
 } DigitalDisplayTextures;
+
+VcrColorPalette default_color_palette(void) {
+    VcrColorPalette vcr_color_palette = {
+        PALETTE_DYNAMICRON_YELLOW,
+        PALETTE_DYNAMICRON_ORANGE,
+        PALETTE_DYNAMICRON_RED,
+        PALETTE_DYNAMICRON_DARK_RED,
+        PALETTE_DYNAMICRON_PURPLE,
+        PALETTE_DYNAMICRON_WHITE,
+        PALETTE_DYNAMICRON_YELLOW,
+    };
+    return vcr_color_palette;
+}
+
+VcrColorPalette supercolor_palette(void) {
+    VcrColorPalette vcr_color_palette = {
+        PALETTE_SUPERCOLOR_BLUE,
+        PALETTE_SUPERCOLOR_GREEN,
+        PALETTE_SUPERCOLOR_YELLOW,
+        PALETTE_SUPERCOLOR_ORANGE,
+        PALETTE_SUPERCOLOR_RED,
+        PALETTE_SUPERCOLOR_WHITE,
+        PALETTE_SUPERCOLOR_BLACK,
+    };
+    return vcr_color_palette;
+}
 
 void render_copy_relative(SDL_Renderer *renderer, SDL_Texture *texture, const SDL_Rect *srcrect, const SDL_Rect *relative_to) {
     SDL_Rect dstrect = {srcrect->x + relative_to->x, srcrect->y + relative_to->y, srcrect->w, srcrect->h};
