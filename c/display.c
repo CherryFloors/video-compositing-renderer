@@ -201,112 +201,26 @@ void standby_screen(VcrApplication *vcr_app, VcrColorPalette colors, bool clear)
     }
 }
 
-bool process_key_stroke(SDL_Keysym symbol) {
-    bool should_quit = false;
+VcrEvent process_key_stroke(VcrApplication *vcr_app, SDL_Keysym symbol) {
 
+    VcrEvent processed_keystroke = VCR_EVENT_NONE;
     switch (symbol.sym) {
-    case SDLK_q:
-        should_quit = true;
-        break;
-
-    default:
-        printf("I found this [%d]\n", symbol.sym);
-        break;
-    }
-
-    return should_quit;
-}
-
-VcrEvent handle_event(SDL_Event *event, VcrApplication *vcr_app) {
-
-    bool should_quit = false;
-    int r, g, b;
-
-    switch (event->type) {
-    case SDL_QUIT:
-        should_quit = true;
-        break;
-
-    case SDL_KEYDOWN:
-        struct timeval t1, t2;
-        double elapsed_time;
-        gettimeofday(&t1, NULL);
-
-        if (!vcr_app->font_digital_clock_7seg) {
-            r = event->key.keysym.sym % 255;
-            g = (event->key.keysym.sym * 2) % 255;
-            b = (event->key.keysym.sym * event->key.keysym.sym) % 255;
-            SDL_SetRenderDrawColor(vcr_app->renderer, r, g, b, 255);
-            SDL_RenderClear(vcr_app->renderer);
-        } else {
-            SDL_SetRenderDrawColor(vcr_app->renderer, 0, 0, 0, 255);
-            SDL_RenderClear(vcr_app->renderer);
-            char text[50];
-            SDL_snprintf(text, sizeof(text), "I found this (%d)", event->key.keysym.sym);
-            SDL_Color foreground = {0x6E, 0xFB, 0x4C};
-
-            SDL_Surface *text_surface = TTF_RenderText_Blended(vcr_app->font_default, text, foreground);
-            SDL_Texture *text_texture = SDL_CreateTextureFromSurface(vcr_app->renderer, text_surface);
-
-            float scale = 640.0 / text_surface->w;
-            SDL_Rect dest = {0, 0, 640, (int)(text_surface->h * scale)};
-            SDL_RenderCopy(vcr_app->renderer, text_texture, NULL, &dest);
-
-            SDL_DestroyTexture(text_texture);
-            SDL_FreeSurface(text_surface);
-        }
-
-        SDL_RenderPresent(vcr_app->renderer);
-        should_quit = process_key_stroke(event->key.keysym);
-        SDL_RenderClear(vcr_app->renderer);
-
-        if (event->key.keysym.sym == SDLK_s) {
+        case SDLK_q:
+            processed_keystroke = VCR_EVENT_QUIT;
+            break;
+        case SDLK_s:
             standby_screen(vcr_app, supercolor_palette(), false);
-        }
-        gettimeofday(&t2, NULL);
-        // Seconds to milliseconds
-        elapsed_time = (t2.tv_sec - t1.tv_sec) * 1000.0;
-        // Microseconds to milliseconds
-        elapsed_time += (t2.tv_usec - t1.tv_usec) / 1000.0;
-        printf("%f ms/frame  |  %f fps\n", elapsed_time, 1000.0 / elapsed_time);
-
-        break;
-
-    default:
-        if(event->type == vcr_app->video_player.event_wakeup_on_mpv_render_update) {
-            render_video_frame(&vcr_app->video_player, vcr_app->renderer, &vcr_app->video_screen);
-        }
-
-        if (event->type == vcr_app->video_player.event_wakeup_on_mpv_events) {
-            // Handle all remaining mpv events.
-            while (1) {
-                mpv_event *mp_event = mpv_wait_event(vcr_app->video_player.mpv, 0);
-                if (mp_event->event_id == MPV_EVENT_NONE)
-                    break;
-                if (mp_event->event_id == MPV_EVENT_END_FILE) {
-                    return VCR_EVENT_VIDEO_END;
-                }
-                if (mp_event->event_id == MPV_EVENT_LOG_MESSAGE) {
-                    mpv_event_log_message *msg = mp_event->data;
-                    // Print log messages about DR allocations, just to
-                    // test whether it works. If there is more than 1 of
-                    // these, it works. (The log message can actually change
-                    // any time, so it's possible this logging stops working
-                    // in the future.)
-                    if (strstr(msg->text, "DR image"))
-                        printf("log: %s", msg->text);
-                    continue;
-                }
-                printf("event: %s\n", mpv_event_name(mp_event->event_id));
-            }
-        }
+            break;
+        case SDLK_d:
+            standby_screen(vcr_app, default_color_palette(), false);
+            break;
+        default:
+            processed_keystroke = VCR_EVENT_NONE;
+            printf("I found this [%d]\n", symbol.sym);
+            break;
     }
 
-    if (should_quit) {
-        return VCR_EVENT_QUIT;
-    }
-
-    return VCR_EVENT_NONE;
+    return processed_keystroke;
 }
 
 void set_clock_hour_and_am_pm_from_24_hour_fmt(int hour_24_fmt, DigitalDisplayState *digital_display_state) {
@@ -347,10 +261,61 @@ bool update_digital_clock_and_check_for_redraw(DigitalDisplayState *digital_disp
     return redraw;
 }
 
+VcrEvent process_default_sdl_events(VcrApplication *vcr_app, SDL_Event *event) {
+
+    VcrEvent default_event = VCR_EVENT_NONE;
+    if(event->type == vcr_app->video_player.event_wakeup_on_mpv_render_update) {
+        render_video_frame(&vcr_app->video_player, vcr_app->renderer, &vcr_app->video_screen);
+    }
+
+    if (event->type == vcr_app->video_player.event_wakeup_on_mpv_events) {
+        // Handle all remaining mpv events.
+        while (1) {
+            mpv_event *mp_event = mpv_wait_event(vcr_app->video_player.mpv, 0);
+            if (mp_event->event_id == MPV_EVENT_NONE)
+                break;
+            if (mp_event->event_id == MPV_EVENT_END_FILE) {
+                return VCR_EVENT_VIDEO_END;
+            }
+            if (mp_event->event_id == MPV_EVENT_LOG_MESSAGE) {
+                mpv_event_log_message *msg = mp_event->data;
+                // Print log messages about DR allocations, just to
+                // test whether it works. If there is more than 1 of
+                // these, it works. (The log message can actually change
+                // any time, so it's possible this logging stops working
+                // in the future.)
+                if (strstr(msg->text, "DR image"))
+                    printf("log: %s", msg->text);
+                continue;
+            }
+            printf("event: %s\n", mpv_event_name(mp_event->event_id));
+        }
+    }
+
+    return default_event;
+}
+
+VcrEvent process_sdl_event(VcrApplication *vcr_app, SDL_Event *event) {
+
+    VcrEvent processed_event;
+    switch (event->type) {
+        case SDL_QUIT:
+            processed_event = VCR_EVENT_QUIT;
+            break;
+        case SDL_KEYDOWN:
+            processed_event = process_key_stroke(vcr_app, event->key.keysym);
+            break;
+        default:
+            processed_event = process_default_sdl_events(vcr_app, event);
+            break;
+    }
+    return processed_event;
+}
+
 // TODO: Rename to start_engine(program_q)
 int run_display_loop(void) {
 
-    char *f1 = "";
+    // char *f1 = "";
 
     VcrApplication vcr_app;
     if (init_vcr_application(&vcr_app) != 0) {
@@ -372,10 +337,11 @@ int run_display_loop(void) {
     while (running) {
 
         int frame_start = SDL_GetTicks();
-        SDL_Event Event;
-        while (SDL_PollEvent(&Event)) {
+        SDL_Event sdl_event;
+        VcrEvent vcr_event;
+        while (SDL_PollEvent(&sdl_event)) {
 
-            VcrEvent vcr_event = handle_event(&Event, &vcr_app);
+            vcr_event = process_sdl_event(&vcr_app, &sdl_event);
             if (vcr_event == VCR_EVENT_QUIT) {
                 running = false;
             }
@@ -402,5 +368,5 @@ int run_display_loop(void) {
     }
 
     destroy_vcr_application(&vcr_app);
-    return (0);
+    return 0;
 }
