@@ -2,9 +2,12 @@
 #include <python3.12/longobject.h>
 #include <python3.12/unicodeobject.h>
 
-#define VCR_PROGRAMMING_QUEUE
+#define VCR_PROGRAMMING_QUEUE_IMPLEMENTATION
+#define VCR_ASSETS_IMPLEMENTATION
+#define VIDEO_PLAYER_IMPLEMENTATION
 #include "vcr_programming_queue.h"
-#include "display.c"
+#include "engine.h"
+#include "engine.c"
 
 ProgrammingQueue programming_queue;
 
@@ -34,7 +37,9 @@ static PyObject *_enqueue_program(PyObject *self, PyObject *args) {
     return PyLong_FromLong(enqueue(&programming_queue, &program));
 }
 
-static PyObject *open_display_window(PyObject *self, PyObject *args) { return PyLong_FromLong(run_display_loop()); }
+static PyObject *open_display_window(PyObject *self, PyObject *args) { 
+    return PyLong_FromLong(start_engine(&programming_queue));
+}
 
 #ifdef DEBUG
 static PyObject *_test_dequeue_program(PyObject *self, PyObject *args) {

@@ -19,15 +19,10 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-#define VCR_ASSETS_IMPLEMENTATION
+#include "engine.h"
 #include "vcr_assets.h"
-#define VIDEO_PLAYER_IMPLEMENTATION
 #include "video_player.h"
-
-typedef enum DisplayResolution {
-    RESOULUTION_SD_640_480,
-    RESOULUTION_FHD_1920_1080,
-} DisplayResolution;
+#include "vcr_programming_queue.h"
 
 typedef struct VcrApplication {
     SDL_Window *window;
@@ -40,12 +35,6 @@ typedef struct VcrApplication {
     DigitalDisplayState digital_display_state;
     VideoPlayerContext video_player;
 } VcrApplication;
-
-typedef enum VcrEvent {
-    VCR_EVENT_NONE      = 0,
-    VCR_EVENT_QUIT      = 1,
-    VCR_EVENT_VIDEO_END = 2,
-} VcrEvent;
 
 int init_vcr_application(VcrApplication *vcr_app) {
 
@@ -270,8 +259,7 @@ VcrEvent process_sdl_event(VcrApplication *vcr_app, SDL_Event *event) {
     return processed_event;
 }
 
-// TODO: Rename to start_engine(program_q)
-int run_display_loop(void) {
+int start_engine(ProgrammingQueue *program_queue) {
 
     // char *f1 = "";
 

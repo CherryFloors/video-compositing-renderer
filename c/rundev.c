@@ -1,8 +1,15 @@
-#include "display.c"
+#define VCR_PROGRAMMING_QUEUE_IMPLEMENTATION
+#define VCR_ASSETS_IMPLEMENTATION
+#define VIDEO_PLAYER_IMPLEMENTATION
+#include "vcr_programming_queue.h"
+#include "engine.c"
 // #include "vcr_assets.h"
 // #include "spacetime.c"
 
-int main(void) { run_display_loop(); }
+int main(void) {
+    ProgrammingQueue programming_queue;
+    start_engine(&programming_queue);
+}
 // int main(void) { spacetime(); }
 // int main(void) {
 //
