@@ -17,7 +17,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <sys/time.h>
-#include <time.h>
 #include <unistd.h>
 
 #define VCR_ASSETS_IMPLEMENTATION
@@ -219,44 +218,6 @@ VcrEvent process_key_stroke(VcrApplication *vcr_app, SDL_Keysym symbol) {
     }
 
     return processed_keystroke;
-}
-
-void set_clock_hour_and_am_pm_from_24_hour_fmt(int hour_24_fmt, DigitalDisplayState *digital_display_state) {
-
-    int hour = hour_24_fmt;
-    digital_display_state->am = true;
-    digital_display_state->pm = false;
-
-    if (hour >= 12) {
-        hour = hour - 12;
-        digital_display_state->am = false;
-        digital_display_state->pm = true;
-    }
-
-    if (hour == 0) {
-        hour = 12;
-    }
-
-    digital_display_state->hour = hour;
-}
-
-bool update_digital_clock_and_check_for_redraw(DigitalDisplayState *digital_display_state) {
-
-    bool redraw = false;
-    time_t now = time(NULL);
-    struct tm *current_time = localtime(&now);
-
-    if (current_time->tm_hour != digital_display_state->hour) {
-        redraw = true;
-        set_clock_hour_and_am_pm_from_24_hour_fmt(current_time->tm_hour, digital_display_state);
-    }
-
-    if (current_time->tm_min != digital_display_state->minute) {
-        redraw = true;
-        digital_display_state->minute = current_time->tm_min;
-    }
-
-    return redraw;
 }
 
 VcrEvent process_default_sdl_events(VcrApplication *vcr_app, SDL_Event *event) {

@@ -1,5 +1,4 @@
 #pragma once
-#include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <math.h>
@@ -10,6 +9,7 @@
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_ttf.h>
 #include <unistd.h>
+#include <time.h>
 
 const SDL_Color PALETTE_SUPERCOLOR_BLUE     = {0x03, 0x8D, 0xAE, 0xFF};
 const SDL_Color PALETTE_SUPERCOLOR_GREEN    = {0x8E, 0xA4, 0x3B, 0xFF};
@@ -108,6 +108,8 @@ SDL_Texture *create_glow_text_two_layer(SDL_Renderer *renderer, TTF_Font *font, 
 SDL_Texture *create_digital_display_symbol(SDL_Renderer *renderer, TTF_Font *font, const char *text, bool active);
 DigitalDisplay *create_digital_display(SDL_Renderer *renderer, TTF_Font *clock_font, TTF_Font *symbol_font);
 void destroy_digital_display(DigitalDisplay *digital_display);
+void set_clock_hour_and_am_pm_from_24_hour_fmt(int hour_24_fmt, DigitalDisplayState *digital_display_state);
+bool update_digital_clock_and_check_for_redraw(DigitalDisplayState *digital_display_state);
 void draw_digital_display(SDL_Renderer *renderer, TTF_Font *font, DigitalDisplay *digital_display, DigitalDisplayState *digital_display_state);
 
 #ifdef VCR_ASSETS_IMPLEMENTATION
@@ -400,6 +402,44 @@ void destroy_digital_display(DigitalDisplay *digital_display) {
     SDL_DestroyTexture(digital_display->inactive);
     free(digital_display);
 };
+
+void set_clock_hour_and_am_pm_from_24_hour_fmt(int hour_24_fmt, DigitalDisplayState *digital_display_state) {
+
+    int hour = hour_24_fmt;
+    digital_display_state->am = true;
+    digital_display_state->pm = false;
+
+    if (hour >= 12) {
+        hour = hour - 12;
+        digital_display_state->am = false;
+        digital_display_state->pm = true;
+    }
+
+    if (hour == 0) {
+        hour = 12;
+    }
+
+    digital_display_state->hour = hour;
+}
+
+bool update_digital_clock_and_check_for_redraw(DigitalDisplayState *digital_display_state) {
+
+    bool redraw = false;
+    time_t now = time(NULL);
+    struct tm *current_time = localtime(&now);
+
+    if (current_time->tm_hour != digital_display_state->hour) {
+        redraw = true;
+        set_clock_hour_and_am_pm_from_24_hour_fmt(current_time->tm_hour, digital_display_state);
+    }
+
+    if (current_time->tm_min != digital_display_state->minute) {
+        redraw = true;
+        digital_display_state->minute = current_time->tm_min;
+    }
+
+    return redraw;
+}
 
 SDL_Texture *create_pause_bar_glyph(SDL_Renderer *renderer, int tex_width, int tex_height, bool active) {
 
