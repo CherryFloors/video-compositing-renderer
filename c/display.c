@@ -29,7 +29,6 @@ typedef enum DisplayResolution {
     RESOULUTION_FHD_1920_1080,
 } DisplayResolution;
 
-
 typedef struct VcrApplication {
     SDL_Window *window;
     SDL_Renderer *renderer;
@@ -223,7 +222,7 @@ VcrEvent process_key_stroke(VcrApplication *vcr_app, SDL_Keysym symbol) {
 VcrEvent process_default_sdl_events(VcrApplication *vcr_app, SDL_Event *event) {
 
     VcrEvent default_event = VCR_EVENT_NONE;
-    if(event->type == vcr_app->video_player.event_wakeup_on_mpv_render_update) {
+    if (event->type == vcr_app->video_player.event_wakeup_on_mpv_render_update) {
         render_video_frame(&vcr_app->video_player, vcr_app->renderer, &vcr_app->video_screen);
     }
 
