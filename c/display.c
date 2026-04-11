@@ -140,7 +140,7 @@ void render_visual_static(VcrApplication *vcr_app, SDL_Rect screen) {
     SDL_DestroyTexture(static_texture);
 }
 
-void render_videoscreen(VcrApplication *vcr_app, SDL_Rect screen) {
+void render_videoscreen_shadow(VcrApplication *vcr_app, SDL_Rect screen) {
 
     SDL_Rect shadow = screen;
     int shadow_size = 5;
@@ -161,9 +161,7 @@ void render_videoscreen(VcrApplication *vcr_app, SDL_Rect screen) {
         SDL_RenderDrawRect(vcr_app->renderer, &shadow);
     }
 
-    // render_visual_static(vcr_display, screen);
     SDL_SetRenderDrawBlendMode(vcr_app->renderer, reset_blend_mode);
-    // SDL_SetRenderDrawColor(vcr_display->renderer, 0x1A, 0xFD, 0xD7, 0xFF);
     SDL_RenderFillRect(vcr_app->renderer, &screen);
 }
 
@@ -326,7 +324,7 @@ int run_display_loop(void) {
     const int FRAME_DELAY = 1000 / TARGET_FPS;
 
     standby_screen(&vcr_app, default_color_palette(), false);
-    render_videoscreen(&vcr_app, vcr_app.video_screen);
+    render_videoscreen_shadow(&vcr_app, vcr_app.video_screen);
     bool redraw_digital_display = update_digital_clock_and_check_for_redraw(&vcr_app.digital_display_state);
     draw_digital_display(vcr_app.renderer, vcr_app.font_digital_clock_7seg, vcr_app.digital_display, &vcr_app.digital_display_state);
 
@@ -352,7 +350,7 @@ int run_display_loop(void) {
             }
         }
 
-        render_visual_static(&vcr_app, vcr_app.video_screen);
+        render_video_static(&vcr_app.video_player, vcr_app.renderer, &vcr_app.video_screen);
         SDL_RenderPresent(vcr_app.renderer);
 
         // TODO: dont check this 24 times a second...

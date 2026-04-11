@@ -47,6 +47,7 @@ typedef struct {
 int init_video_player(VideoPlayerContext *video_player_context, SDL_Renderer *renderer, int w, int h);
 int destroy_video_player(VideoPlayerContext *video_player);
 int render_video_frame(VideoPlayerContext *video_player, SDL_Renderer *renderer, SDL_Rect *screen_location);
+int render_video_static(VideoPlayerContext *video_player, SDL_Renderer *renderer, SDL_Rect *screen_location);
 int play_file(VideoPlayerContext *video_player, char *file);
 
 #ifdef VIDEO_PLAYER_IMPLEMENTATION
@@ -156,6 +157,25 @@ int destroy_video_player(VideoPlayerContext *video_player) {
     SDL_DestroyTexture(video_player->screen);
     mpv_render_context_free(video_player->mpv_render);
     mpv_destroy(video_player->mpv);
+
+    return 0;
+}
+
+int render_video_static(VideoPlayerContext *video_player, SDL_Renderer *renderer, SDL_Rect *screen_location) {
+
+    int screen_width, screen_heigth;
+    SDL_QueryTexture(video_player->screen, NULL, NULL, &screen_width, &screen_heigth);
+
+    Uint32 pixels[screen_width * screen_heigth];
+    for (int y = 0; y < screen_heigth; ++y) {
+        for (int x = 0; x < screen_width; ++x) {
+            Uint8 noise = (Uint8)rand();
+            pixels[y * screen_width + x] = (noise << 24) | (noise << 16) | (noise << 8) | 0xff; // RGBA
+        }
+    }
+
+    SDL_UpdateTexture(video_player->screen, NULL, pixels, sizeof(Uint32) * screen_width);
+    SDL_RenderCopy(renderer, video_player->screen, NULL, screen_location);
 
     return 0;
 }
