@@ -7,8 +7,8 @@
 // #include "spacetime.c"
 
 int main(void) {
-    ProgrammingQueue programming_queue;
-    start_engine(&programming_queue);
+    VcrProgrammingQueue vcr_programming_queue;
+    start_engine(&vcr_programming_queue);
 }
 // int main(void) { spacetime(); }
 // int main(void) {

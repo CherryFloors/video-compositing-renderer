@@ -1,5 +1,5 @@
 # In Progress
-- rename video_player.c to header and add impl def guard
+- rename programming q vars
 
 # TODO
 - store all routines that render an asset to a texture or display in vcr_assets.h
@@ -18,3 +18,4 @@
 - add display to vcr app struct and rename vcr app variables
 - animate digital display clock by checking time
 - rename programming_queue.c to to header and add impl def guard
+- rename video_player.c to header and add impl def guard

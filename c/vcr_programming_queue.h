@@ -14,81 +14,81 @@ typedef enum {
 } EnqueueCode;
 
 // Program Struct
-typedef struct {
+typedef struct VcrProgram {
     char url[STRING_BUFFER_WIDTH];
-} Program;
+} VcrProgram;
 
 // Defining the Queue structure
-typedef struct {
-    Program buffer[BUFFER_SIZE];
+typedef struct VcrProgrammingQueue {
+    VcrProgram buffer[BUFFER_SIZE];
     int buffer_length;
     int read_index;
     int write_index;
-} ProgrammingQueue;
+} VcrProgrammingQueue;
 
-void safe_copy_program(Program *dest, Program *src);
+void safe_copy_program(VcrProgram *dest, VcrProgram *src);
 /*
  * Function to initialize the queue. Can be used to reset/clear the queue
  */
-void initialize_queue(ProgrammingQueue *q);
+void initialize_queue(VcrProgrammingQueue *queue);
 /*
  * Function to check if the queue is empty
  */
-bool is_empty(ProgrammingQueue *q);
+bool is_empty(VcrProgrammingQueue *queue);
 /*
  * Function to check if the queue is full
  */
-bool is_full(ProgrammingQueue *q);
+bool is_full(VcrProgrammingQueue *queue);
 /*
  * Enqueues the given void* element at the back of this Queue.
  * Returns true on success and false on enq failure when element is NULL or
  * queue is full.
  */
-EnqueueCode enqueue(ProgrammingQueue *q, Program *program_p);
+EnqueueCode enqueue(VcrProgrammingQueue *queue, VcrProgram *program_p);
 /*
  * Some Docs...
  */
-bool dequeue(ProgrammingQueue *q, Program *program_p);
+bool dequeue(VcrProgrammingQueue *queue, VcrProgram *program_p);
 
 
 #ifdef VCR_PROGRAMMING_QUEUE_IMPLEMENTATION
 
-void safe_copy_program(Program *dest, Program *src) { strncpy(dest->url, src->url, MAX_STRING_LENGTH); }
+void safe_copy_program(VcrProgram *dest, VcrProgram *src) { strncpy(dest->url, src->url, MAX_STRING_LENGTH); }
 
-void initialize_queue(ProgrammingQueue *q) {
-    q->buffer_length = 0;
-    q->read_index = 0;
-    q->write_index = 0;
+void initialize_queue(VcrProgrammingQueue *queue) {
+    queue->buffer_length = 0;
+    queue->read_index = 0;
+    queue->write_index = 0;
 }
 
-bool is_empty(ProgrammingQueue *q) { return q->buffer_length == 0; }
+bool is_empty(VcrProgrammingQueue *queue) { return queue->buffer_length == 0; }
 
-bool is_full(ProgrammingQueue *q) { return q->buffer_length == BUFFER_SIZE; }
+bool is_full(VcrProgrammingQueue *queue) { return queue->buffer_length == BUFFER_SIZE; }
 
-EnqueueCode enqueue(ProgrammingQueue *q, Program *program_p) {
-    if (is_full(q)) {
+EnqueueCode enqueue(VcrProgrammingQueue *queue, VcrProgram *program) {
+    if (is_full(queue)) {
         return FAIL_QUEUE_FULL;
     }
 
-    if (strlen(program_p->url) > MAX_STRING_LENGTH) {
+    if (strlen(program->url) > MAX_STRING_LENGTH) {
         return FAIL_URL_LENGTH;
     }
 
-    safe_copy_program(&q->buffer[q->write_index], program_p);
-    q->write_index = (q->write_index + 1) % BUFFER_SIZE;
-    q->buffer_length++;
+    safe_copy_program(&queue->buffer[queue->write_index], program);
+    queue->write_index = (queue->write_index + 1) % BUFFER_SIZE;
+    queue->buffer_length++;
 
     return SUCCESS;
 }
 
-bool dequeue(ProgrammingQueue *q, Program *program_p) {
-    if (is_empty(q)) {
+bool dequeue(VcrProgrammingQueue *queue, VcrProgram *program) {
+    if (is_empty(queue)) {
         return false;
     }
 
-    safe_copy_program(program_p, &q->buffer[q->read_index]);
-    q->read_index = (q->read_index + 1) % BUFFER_SIZE;
-    q->buffer_length--;
+    safe_copy_program(program, &queue->buffer[queue->read_index]);
+    queue->read_index = (queue->read_index + 1) % BUFFER_SIZE;
+    queue->buffer_length--;
 
     return true;
 };

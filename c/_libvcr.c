@@ -9,19 +9,19 @@
 #include "engine.h"
 #include "engine.c"
 
-ProgrammingQueue programming_queue;
+VcrProgrammingQueue vcr_programming_queue;
 
 static PyObject *_queue_count(PyObject *self, PyObject *args) {
-    return PyLong_FromLong(programming_queue.buffer_length);
+    return PyLong_FromLong(vcr_programming_queue.buffer_length);
 }
 
 static PyObject *_clear_queue(PyObject *self, PyObject *args) {
-    initialize_queue(&programming_queue);
-    return PyLong_FromLong(programming_queue.buffer_length);
+    initialize_queue(&vcr_programming_queue);
+    return PyLong_FromLong(vcr_programming_queue.buffer_length);
 }
 
 static PyObject *_enqueue_program(PyObject *self, PyObject *args) {
-    Program program;
+    VcrProgram program;
     char *program_url;
 
     /* Parse arguments */
@@ -34,18 +34,18 @@ static PyObject *_enqueue_program(PyObject *self, PyObject *args) {
     }
 
     strncpy(program.url, program_url, MAX_STRING_LENGTH);
-    return PyLong_FromLong(enqueue(&programming_queue, &program));
+    return PyLong_FromLong(enqueue(&vcr_programming_queue, &program));
 }
 
 static PyObject *open_display_window(PyObject *self, PyObject *args) { 
-    return PyLong_FromLong(start_engine(&programming_queue));
+    return PyLong_FromLong(start_engine(&vcr_programming_queue));
 }
 
 #ifdef DEBUG
 static PyObject *_test_dequeue_program(PyObject *self, PyObject *args) {
-    Program program;
-    if (dequeue(&programming_queue, &program)) {
-        return PyUnicode_DecodeASCII(program.url, strlen(program.url), "strict");
+    VcrProgram vcr_program;
+    if (dequeue(&vcr_programming_queue, &vcr_program)) {
+        return PyUnicode_DecodeASCII(vcr_program.url, strlen(vcr_program.url), "strict");
     }
 
     return PyUnicode_DecodeASCII("", strlen(""), "strict");

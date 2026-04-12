@@ -259,7 +259,11 @@ VcrEvent process_sdl_event(VcrApplication *vcr_app, SDL_Event *event) {
     return processed_event;
 }
 
-int start_engine(ProgrammingQueue *program_queue) {
+int engine_routine_fullscreen_video(VcrApplication *vcr_app, VcrProgram *program) {
+    return 0;
+}
+
+int start_engine(VcrProgrammingQueue *program_queue) {
 
     // char *f1 = "";
 

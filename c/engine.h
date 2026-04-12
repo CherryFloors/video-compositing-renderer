@@ -12,4 +12,4 @@ typedef enum VcrEvent {
     VCR_EVENT_VIDEO_END = 2,
 } VcrEvent;
 
-int start_engine(ProgrammingQueue *program_queue);
+int start_engine(VcrProgrammingQueue *program_queue);
