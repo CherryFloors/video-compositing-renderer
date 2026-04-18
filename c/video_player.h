@@ -48,6 +48,7 @@ int init_video_player(VideoPlayerContext *video_player_context, SDL_Renderer *re
 int destroy_video_player(VideoPlayerContext *video_player);
 int render_video_frame(VideoPlayerContext *video_player, SDL_Renderer *renderer, SDL_Rect *screen_location);
 int render_video_static(VideoPlayerContext *video_player, SDL_Renderer *renderer, SDL_Rect *screen_location);
+int resize_screen(VideoPlayerContext *video_player_context, SDL_Renderer *renderer, int w, int h);
 int play_file(VideoPlayerContext *video_player, char *file);
 
 #ifdef VIDEO_PLAYER_IMPLEMENTATION
@@ -157,6 +158,27 @@ int destroy_video_player(VideoPlayerContext *video_player) {
     SDL_DestroyTexture(video_player->screen);
     mpv_render_context_free(video_player->mpv_render);
     mpv_destroy(video_player->mpv);
+
+    return 0;
+}
+
+int resize_screen(VideoPlayerContext *video_player_context, SDL_Renderer *renderer, int w, int h) {
+
+    SDL_DestroyTexture(video_player_context->screen);
+    video_player_context->screen = SDL_CreateTexture(
+        renderer,
+        SDL_PIXELFORMAT_RGBX8888,
+        SDL_TEXTUREACCESS_STREAMING,
+        w, h
+    );
+
+    if (!video_player_context->screen) {
+        printf("could not allocate texture\n");
+        exit(1);
+    }
+
+    video_player_context->screen_width = w;
+    video_player_context->screen_height = h;
 
     return 0;
 }

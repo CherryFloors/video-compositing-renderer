@@ -3,12 +3,13 @@
 #define VIDEO_PLAYER_IMPLEMENTATION
 #include "vcr_programming_queue.h"
 #include "engine.c"
-// #include "vcr_assets.h"
-// #include "spacetime.c"
 
 int main(void) {
+
     VcrProgrammingQueue vcr_programming_queue;
+    initialize_queue(&vcr_programming_queue);
     start_engine(&vcr_programming_queue);
+
 }
 // int main(void) { spacetime(); }
 // int main(void) {

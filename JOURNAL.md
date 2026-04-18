@@ -1,5 +1,5 @@
 # In Progress
-- rename programming q vars
+- create fullscreen movie routine in engine
 
 # TODO
 - store all routines that render an asset to a texture or display in vcr_assets.h
@@ -19,3 +19,4 @@
 - animate digital display clock by checking time
 - rename programming_queue.c to to header and add impl def guard
 - rename video_player.c to header and add impl def guard
+- rename programming q vars

@@ -1,4 +1,3 @@
-#pragma once
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_blendmode.h>
 #include <SDL2/SDL_events.h>
@@ -208,6 +207,31 @@ VcrEvent process_key_stroke(VcrApplication *vcr_app, SDL_Keysym symbol) {
     return processed_keystroke;
 }
 
+VcrEvent clear_mpv_events(VcrApplication *vcr_app) {
+
+    VcrEvent vcr_event = VCR_EVENT_NONE;
+    while (true) {
+
+        mpv_event *event_mpv = mpv_wait_event(vcr_app->video_player.mpv, 0);
+        if (event_mpv->event_id == MPV_EVENT_NONE) {
+            break;
+        }
+
+        if (event_mpv->event_id == MPV_EVENT_END_FILE) {
+            vcr_event = VCR_EVENT_VIDEO_END;
+        }
+
+        if (event_mpv->event_id == MPV_EVENT_LOG_MESSAGE) {
+            // mpv_event_log_message *msg = event_mpv->data;
+            // printf("[MPV] %s", msg->text);
+            continue;
+        }
+    }
+
+    return vcr_event;
+
+}
+
 VcrEvent process_default_sdl_events(VcrApplication *vcr_app, SDL_Event *event) {
 
     VcrEvent default_event = VCR_EVENT_NONE;
@@ -216,27 +240,7 @@ VcrEvent process_default_sdl_events(VcrApplication *vcr_app, SDL_Event *event) {
     }
 
     if (event->type == vcr_app->video_player.event_wakeup_on_mpv_events) {
-        // Handle all remaining mpv events.
-        while (1) {
-            mpv_event *mp_event = mpv_wait_event(vcr_app->video_player.mpv, 0);
-            if (mp_event->event_id == MPV_EVENT_NONE)
-                break;
-            if (mp_event->event_id == MPV_EVENT_END_FILE) {
-                return VCR_EVENT_VIDEO_END;
-            }
-            if (mp_event->event_id == MPV_EVENT_LOG_MESSAGE) {
-                mpv_event_log_message *msg = mp_event->data;
-                // Print log messages about DR allocations, just to
-                // test whether it works. If there is more than 1 of
-                // these, it works. (The log message can actually change
-                // any time, so it's possible this logging stops working
-                // in the future.)
-                if (strstr(msg->text, "DR image"))
-                    printf("log: %s", msg->text);
-                continue;
-            }
-            printf("event: %s\n", mpv_event_name(mp_event->event_id));
-        }
+        default_event = clear_mpv_events(vcr_app);
     }
 
     return default_event;
@@ -259,13 +263,58 @@ VcrEvent process_sdl_event(VcrApplication *vcr_app, SDL_Event *event) {
     return processed_event;
 }
 
-int engine_routine_fullscreen_video(VcrApplication *vcr_app, VcrProgram *program) {
-    return 0;
+VcrEvent engine_routine_fullscreen_video(VcrApplication *vcr_app, VcrProgram *program) {
+
+    SDL_Rect original_screen = vcr_app->video_screen;
+    bool video_playing = true;
+    int window_width, window_height;
+    SDL_GetWindowSize(vcr_app->window, &window_width, &window_height);
+    resize_screen(&vcr_app->video_player, vcr_app->renderer, window_width, window_height);
+
+    vcr_app->video_screen.x = 0;
+    vcr_app->video_screen.y = 0;
+    vcr_app->video_screen.w = window_width;
+    vcr_app->video_screen.h = window_height;
+
+    play_file(&vcr_app->video_player, program->url);
+
+    VcrEvent vcr_event;
+    while (video_playing) {
+    
+        SDL_Event sdl_event;
+        if (SDL_WaitEvent(&sdl_event) != 1) {
+            printf("SDL event loop error\n");
+            // mpv_event *ev = mpv_wait_event(vcr_app->video_player.mpv, 1000);
+            // printf("err event: %s\n", mpv_event_name(ev->event_id));
+            // if (ev->event_id == MPV_EVENT_LOG_MESSAGE) {
+            //     mpv_event_log_message *msg = ev->data;
+            //     printf("log: %s", msg->text);
+            // }
+            return 1;
+        }
+        
+        vcr_event = process_sdl_event(vcr_app, &sdl_event);
+        if (vcr_event == VCR_EVENT_QUIT) {
+            video_playing = false;
+        }
+
+        if (vcr_event == VCR_EVENT_VIDEO_END) {
+            video_playing = false;
+        }
+
+    }
+
+    printf("fullscreen loop end\n");
+    resize_screen(&vcr_app->video_player, vcr_app->renderer, original_screen.w, original_screen.h);
+    vcr_app->video_screen.x = original_screen.x;
+    vcr_app->video_screen.y = original_screen.y;
+    vcr_app->video_screen.w = original_screen.w;
+    vcr_app->video_screen.h = original_screen.h;
+
+    return vcr_event;
 }
 
-int start_engine(VcrProgrammingQueue *program_queue) {
-
-    // char *f1 = "";
+int start_engine(VcrProgrammingQueue *vcr_programming_queue) {
 
     VcrApplication vcr_app;
     if (init_vcr_application(&vcr_app) != 0) {
@@ -280,15 +329,13 @@ int start_engine(VcrProgrammingQueue *program_queue) {
     bool redraw_digital_display = update_digital_clock_and_check_for_redraw(&vcr_app.digital_display_state);
     draw_digital_display(vcr_app.renderer, vcr_app.font_digital_clock_7seg, vcr_app.digital_display, &vcr_app.digital_display_state);
 
-    // play_file(&vcr_app.video_player, f1);
-
     bool running = true;
-    bool play_2 = true;
     while (running) {
 
         int frame_start = SDL_GetTicks();
         SDL_Event sdl_event;
         VcrEvent vcr_event;
+
         while (SDL_PollEvent(&sdl_event)) {
 
             vcr_event = process_sdl_event(&vcr_app, &sdl_event);
@@ -296,10 +343,20 @@ int start_engine(VcrProgrammingQueue *program_queue) {
                 running = false;
             }
 
-            if (vcr_event == VCR_EVENT_VIDEO_END && play_2) {
-                play_2 = false;
-                // play_file(&vcr_app.video_player, f2);
-            }
+        }
+
+        if (vcr_event == VCR_EVENT_QUIT) {
+            break;
+        }
+
+        if (!is_empty(vcr_programming_queue)) {
+            VcrProgram vcr_program;
+            dequeue(vcr_programming_queue, &vcr_program);
+            vcr_event = engine_routine_fullscreen_video(&vcr_app, &vcr_program);
+        }
+
+        if (vcr_event == VCR_EVENT_QUIT) {
+            break;
         }
 
         render_video_static(&vcr_app.video_player, vcr_app.renderer, &vcr_app.video_screen);
