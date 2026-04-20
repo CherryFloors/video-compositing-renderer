@@ -134,7 +134,7 @@ VcrColorPalette default_color_palette(void) {
         PALETTE_DYNAMICRON_DARK_RED,
         PALETTE_DYNAMICRON_PURPLE,
         PALETTE_DYNAMICRON_WHITE,
-        PALETTE_DYNAMICRON_YELLOW,
+        PALETTE_DYNAMICRON_BLACK,
     };
     return vcr_color_palette;
 }

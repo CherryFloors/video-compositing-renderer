@@ -1,7 +1,12 @@
 # In Progress
-- create fullscreen movie routine in engine
+- Create VCR logo vector draw
 
 # TODO
+- Fix standby screen (scale BG, no screen VCR logo, center screen and clock, outline clock)
+- Implement thread shutdown signal by queueing SDL_QUIT if engine is running
+- Release engine thread from GIL, start thread from python side
+- Build python side VcrProgram logic
+- Create spacetime background
 - store all routines that render an asset to a texture or display in vcr_assets.h
 - rename display.c to engine.h and add impl def guard
 - Refactor the static generator so its a renderer and not a texture generator similar to render_video_frame.
@@ -10,6 +15,7 @@
 - Enable queueing videos and standby
 
 # DONE
+- create fullscreen movie routine in engine
 - Create a .clangd file to treat .h as .c and define them impl guards so lsp doesnt gray out impls
 - digital display data structure with active and inactive textures
 - refactor digital display symbol texture creator to set container(rect) and return texture and not require app. Move to assets

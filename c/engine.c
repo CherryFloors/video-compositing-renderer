@@ -50,8 +50,7 @@ int init_vcr_application(VcrApplication *vcr_app) {
         return 1;
     }
 
-    vcr_app->font_digital_clock_7seg =
-        TTF_OpenFont("/usr/share/fonts/truetype/dseg/DSEG7ModernMini-Italic.ttf", 48);
+    vcr_app->font_digital_clock_7seg = TTF_OpenFont("/usr/share/fonts/truetype/dseg/DSEG7ModernMini-Italic.ttf", 48);
     if (!vcr_app->font_digital_clock_7seg) {
         printf("Failed to open clock font\n");
         return 1;

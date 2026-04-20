@@ -1,7 +1,7 @@
 from enum import Enum
 from dataclasses import dataclass
 
-from vcr._libvcr import _enqueue_program, _queue_count, _clear_queue
+from vcr._libvcr import _enqueue_program, _queue_count, _clear_queue, open_display_window
 
 
 class EnqueueCode(int, Enum):
