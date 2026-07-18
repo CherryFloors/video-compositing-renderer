@@ -2,6 +2,7 @@
 #define VCR_ASSETS_IMPLEMENTATION
 #define VIDEO_PLAYER_IMPLEMENTATION
 #include "vcr_programming_queue.h"
+#include "spacetime.c"
 #include "engine.c"
 
 int main(void) {

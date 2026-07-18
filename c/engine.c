@@ -37,8 +37,8 @@ typedef struct VcrApplication {
 
 int init_vcr_application(VcrApplication *vcr_app) {
 
-    // TODO: Do I need this?
-    SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
+    SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1"); // TODO: Do I need this?
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "2");
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         printf("Failed to init SDL\n");
@@ -72,7 +72,7 @@ int init_vcr_application(VcrApplication *vcr_app) {
 
     vcr_app->video_screen = (SDL_Rect){50, 50, 320, 240};
 
-    vcr_app->window = SDL_CreateWindow("VCR", window_x_pos, window_y_pos, 640, 480, SDL_WINDOW_BORDERLESS);
+    vcr_app->window = SDL_CreateWindow("VCR", window_x_pos, window_y_pos, RES_SD_W, RES_SD_H, SDL_WINDOW_BORDERLESS);
     vcr_app->renderer = SDL_CreateRenderer(vcr_app->window, -1, SDL_RENDERER_SOFTWARE);
     vcr_app->digital_display = create_digital_display(vcr_app->renderer, vcr_app->font_digital_clock_7seg, vcr_app->font_default);
 
@@ -154,7 +154,7 @@ void standby_screen(VcrApplication *vcr_app, VcrColorPalette colors, bool clear)
     SDL_SetRenderDrawColor(vcr_app->renderer, colors.text_fg.r, colors.text_fg.g, colors.text_fg.b, 255);
     SDL_RenderClear(vcr_app->renderer);
 
-    int padding = 125;
+    int padding = 190;
     int bar_height = (480 - padding * 2) / 5;
 
     SDL_Rect r0 = {0, padding + (bar_height * 0), 640, bar_height};
@@ -256,7 +256,7 @@ VcrEvent process_sdl_event(VcrApplication *vcr_app, SDL_Event *event) {
             processed_event = process_key_stroke(vcr_app, event->key.keysym);
             break;
         default:
-            processed_event = process_default_sdl_events(vcr_app, event);
+            // processed_event = process_default_sdl_events(vcr_app, event);
             break;
     }
     return processed_event;
@@ -327,6 +327,15 @@ int start_engine(VcrProgrammingQueue *vcr_programming_queue) {
     render_videoscreen_shadow(&vcr_app, vcr_app.video_screen);
     bool redraw_digital_display = update_digital_clock_and_check_for_redraw(&vcr_app.digital_display_state);
     draw_digital_display(vcr_app.renderer, vcr_app.font_digital_clock_7seg, vcr_app.digital_display, &vcr_app.digital_display_state);
+
+    SDL_Rect logo_rect = {400, 200, 200, 200};
+    SDL_Texture *vcr_vector_logo = create_vcr_vector_logo(vcr_app.renderer, 5, PALETTE_DYNAMICRON_BLACK);
+    SDL_QueryTexture(vcr_vector_logo, NULL, NULL, &logo_rect.w, &logo_rect.h);
+    SDL_SetTextureBlendMode(vcr_vector_logo, SDL_BLENDMODE_BLEND);
+    SDL_RenderCopy(vcr_app.renderer, vcr_vector_logo, NULL, &logo_rect);
+    SDL_SetRenderTarget(vcr_app.renderer, NULL);
+    SDL_RenderPresent(vcr_app.renderer);
+    SDL_DestroyTexture(vcr_vector_logo);
 
     bool running = true;
     while (running) {

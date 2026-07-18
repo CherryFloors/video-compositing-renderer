@@ -106,6 +106,8 @@ SDL_Texture *create_pause_bar_glyph(SDL_Renderer *renderer, int tex_width, int t
 SDL_Texture *create_play_arrow_glyph_texture(SDL_Renderer *renderer, int width, int height, bool active);
 SDL_Texture *create_glow_text_two_layer(SDL_Renderer *renderer, TTF_Font *font, const char *text, SDL_Color base_color, SDL_Color bright_color, bool alpha, bool small_font);
 SDL_Texture *create_digital_display_symbol(SDL_Renderer *renderer, TTF_Font *font, const char *text, bool active);
+SDL_Texture *create_circle_filled(SDL_Renderer *renderer, int container, SDL_Color bg, SDL_Color fg, SDL_BlendMode blend_mode);
+SDL_Texture *create_vcr_vector_logo(SDL_Renderer *renderer, int logo_height_divided_by_10, SDL_Color color);
 DigitalDisplay *create_digital_display(SDL_Renderer *renderer, TTF_Font *clock_font, TTF_Font *symbol_font);
 void destroy_digital_display(DigitalDisplay *digital_display);
 void set_clock_hour_and_am_pm_from_24_hour_fmt(int hour_24_fmt, DigitalDisplayState *digital_display_state);
@@ -439,6 +441,245 @@ bool update_digital_clock_and_check_for_redraw(DigitalDisplayState *digital_disp
     }
 
     return redraw;
+}
+
+void draw_circle(SDL_Renderer *renderer, int radius, int center_x, int center_y, SDL_Color color) {
+
+    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+    const int32_t diameter = (radius * 2);
+
+    int32_t x = (radius - 1);
+    int32_t y = 0;
+    int32_t tx = 1;
+    int32_t ty = 1;
+    int32_t error = (tx - diameter);
+
+    while (x >= y) {
+
+        //  Each of the following renders an octant of the circle
+        SDL_RenderDrawPoint(renderer, center_x + x, center_y - y);
+        SDL_RenderDrawPoint(renderer, center_x + x, center_y + y);
+        SDL_RenderDrawPoint(renderer, center_x - x, center_y - y);
+        SDL_RenderDrawPoint(renderer, center_x - x, center_y + y);
+        SDL_RenderDrawPoint(renderer, center_x + y, center_y - x);
+        SDL_RenderDrawPoint(renderer, center_x + y, center_y + x);
+        SDL_RenderDrawPoint(renderer, center_x - y, center_y - x);
+        SDL_RenderDrawPoint(renderer, center_x - y, center_y + x);
+
+        if (error <= 0) {
+            ++y;
+            error += ty;
+            ty += 2;
+        }
+
+        if (error > 0) {
+            --x;
+            tx += 2;
+            error += (tx - diameter);
+        }
+    }
+
+}
+
+SDL_Texture *create_circle_filled(SDL_Renderer *renderer, int container, SDL_Color bg, SDL_Color fg, SDL_BlendMode blend_mode) {
+
+    SDL_Texture *reset_target = SDL_GetRenderTarget(renderer);
+    SDL_Texture *target = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, container, container);
+
+    SDL_SetRenderTarget(renderer, target);
+    SDL_SetTextureBlendMode(target, blend_mode);
+    SDL_SetRenderDrawColor(renderer, bg.r, bg.g, bg.b, bg.a);
+    SDL_RenderClear(renderer);
+
+    SDL_SetRenderDrawColor(renderer, fg.r, fg.g, fg.b, fg.a);
+    // int diameter = container + 2;
+    //
+    int diameter = container + 2;
+    int radius = diameter >> 1;
+
+    int center_x = radius - 1;
+    int center_y = radius - 1;
+
+    int32_t x = radius - 1;
+
+    // int radius = 23;
+    // int diameter = radius * 2 + 1;
+    //
+    // int center_x = 24;
+    // int center_y = 24;
+    //
+    // int32_t x = radius - 1;
+
+    printf("container %d\n", container);
+    printf("diameter  %d\n", diameter);
+    printf("radius    %d\n", radius);
+    printf("center_x  %d\n", center_x);
+    printf("center_y  %d\n", center_y);
+    printf("x         %d\n", x);
+
+    int32_t y = 0;
+    int32_t tx = 1;
+    int32_t ty = 1;
+    int32_t error = (tx - diameter);
+
+    while (x >= y) {
+
+        SDL_RenderDrawLine(renderer, center_x + x, center_y - y, center_x - x, center_y - y);
+        SDL_RenderDrawLine(renderer, center_x + x, center_y + y, center_x - x, center_y + y);
+        SDL_RenderDrawLine(renderer, center_x + y, center_y - x, center_x - y, center_y - x);
+        SDL_RenderDrawLine(renderer, center_x + y, center_y + x, center_x - y, center_y + x);
+
+        if (error <= 0) {
+            ++y;
+            error += ty;
+            ty += 2;
+        }
+
+        if (error > 0) {
+            --x;
+            tx += 2;
+            error += (tx - diameter);
+        }
+    }
+
+    int new_root = 2;
+    int new_width = container - 2;
+    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+    // SDL_RenderDrawLine(renderer, new_root, new_root, new_root, new_width - 1);
+    // SDL_RenderDrawLine(renderer, new_root, new_root, new_width - 1, new_root);
+    // SDL_RenderDrawLine(renderer, new_width - 1, new_root, new_width - 1, new_width - 1);
+    // SDL_RenderDrawLine(renderer, new_root, new_width - 1, new_width - 1, new_width - 1);
+
+    SDL_SetRenderTarget(renderer, reset_target);
+
+    return target;
+
+}
+
+SDL_Texture *create_vcr_vector_logo(SDL_Renderer *renderer, int logo_height_divided_by_10, SDL_Color color) {
+
+    bool round_c = false;
+
+    int logo_height = 10 * logo_height_divided_by_10;
+    int logo_width = logo_height_divided_by_10 * 31;
+
+    int pixels_per_unit = 100;
+    int letter_texture_size = 10 * pixels_per_unit;
+    int circle_texture_size = letter_texture_size + 1;
+
+    int v_x = 0;
+    int c_x = logo_height;
+    int r_x = logo_height * 2 + logo_height_divided_by_10;
+    SDL_Rect v_dest = {v_x, 0, logo_height, logo_height};
+    SDL_Rect c_dest = {c_x, 0, logo_height, logo_height};
+    SDL_Rect r_dest = {r_x, 0, logo_height, logo_height};
+    printf("v: %d - %d - %d - %d\n", v_dest.x, v_dest.y, v_dest.w, v_dest.h);
+    printf("c: %d - %d - %d - %d\n", c_dest.x, c_dest.y, c_dest.w, c_dest.h);
+    printf("r: %d - %d - %d - %d\n", r_dest.x, r_dest.y, r_dest.w, r_dest.h);
+
+    int u1 = pixels_per_unit;
+    int u2 = pixels_per_unit * 2;
+    int u3 = pixels_per_unit * 3;
+    int u4 = pixels_per_unit * 4;
+    int u5 = pixels_per_unit * 5;
+    int u6 = pixels_per_unit * 6;
+    int u7 = pixels_per_unit * 7;
+    int u8 = pixels_per_unit * 8;
+    int uw = pixels_per_unit * 10;
+    int uh = uw;
+
+    SDL_Texture *target = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, logo_width, logo_height);
+    SDL_Texture *letter_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, letter_texture_size, letter_texture_size);
+    SDL_Texture *positive_circle = create_circle_filled(renderer, circle_texture_size, PALETTE_CLEAR, color, SDL_BLENDMODE_NONE);
+    SDL_Texture *negative_circle = create_circle_filled(renderer, circle_texture_size, color, PALETTE_CLEAR, SDL_BLENDMODE_NONE);
+    SDL_SetTextureBlendMode(positive_circle, SDL_BLENDMODE_BLEND);
+
+    // Draw V
+    SDL_SetRenderTarget(renderer, letter_texture);
+    SDL_SetRenderDrawColor(renderer, PALETTE_CLEAR.r, PALETTE_CLEAR.g, PALETTE_CLEAR.b, PALETTE_CLEAR.a);
+    SDL_RenderClear(renderer);
+
+    SDL_Vertex v_geometry[6] = { 
+        {{       0.0,       0.0}, color},
+        {{ (float)u4, (float)uh}, color},
+        {{ (float)u6, (float)uh}, color},
+        {{ (float)uw,       0.0}, color},
+        {{ (float)u8,       0.0}, color},
+        {{ (float)u2,       0.0}, color},
+    };
+    int v_indices[12] = { 0, 1, 5, 5, 1, 2, 1, 2, 4, 2, 3, 4 };
+    SDL_RenderGeometry(renderer, NULL, v_geometry, 6, v_indices, 12);
+
+    SDL_SetRenderTarget(renderer, target);
+    SDL_RenderCopy(renderer, letter_texture, NULL, &v_dest);
+
+    // Draw C
+    SDL_SetRenderTarget(renderer, letter_texture);
+    SDL_SetRenderDrawColor(renderer, PALETTE_CLEAR.r, PALETTE_CLEAR.g, PALETTE_CLEAR.b, PALETTE_CLEAR.a);
+    SDL_RenderClear(renderer);
+
+    if (round_c) {
+        SDL_RenderCopy(renderer, positive_circle, NULL, &(SDL_Rect){ 0,  0, uw, uw});
+        SDL_RenderCopy(renderer, negative_circle, NULL, &(SDL_Rect){u2, u2, u6, u6});
+        SDL_SetRenderDrawColor(renderer, PALETTE_CLEAR.r, PALETTE_CLEAR.g, PALETTE_CLEAR.b, PALETTE_CLEAR.a);
+        SDL_RenderFillRect(renderer, &(SDL_Rect){u6, u4, u4, u2});
+    } else {
+        SDL_RenderCopy(renderer, positive_circle, NULL, &(SDL_Rect){ 0,  0, u6, u6});
+        SDL_RenderCopy(renderer, positive_circle, NULL, &(SDL_Rect){ 0, u4, u6, u6});
+        SDL_RenderCopy(renderer, positive_circle, NULL, &(SDL_Rect){u4,  0, u6, u6});
+        SDL_RenderCopy(renderer, positive_circle, NULL, &(SDL_Rect){u4, u4, u6, u6});
+
+        SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+        SDL_RenderFillRect(renderer, &(SDL_Rect){u3,  0, u4, uh});
+        SDL_RenderFillRect(renderer, &(SDL_Rect){ 0, u3, uh, u4});
+
+        SDL_RenderCopy(renderer, negative_circle, NULL, &(SDL_Rect){u2, u2, u2, u2});
+        SDL_RenderCopy(renderer, negative_circle, NULL, &(SDL_Rect){u6, u2, u2, u2});
+        SDL_RenderCopy(renderer, negative_circle, NULL, &(SDL_Rect){u2, u6, u2, u2});
+        SDL_RenderCopy(renderer, negative_circle, NULL, &(SDL_Rect){u6, u6, u2, u2});
+
+        SDL_SetRenderDrawColor(renderer, PALETTE_CLEAR.r, PALETTE_CLEAR.g, PALETTE_CLEAR.b, PALETTE_CLEAR.a);
+        SDL_RenderFillRect(renderer, &(SDL_Rect){u3, u2, u4, u6});
+        SDL_RenderFillRect(renderer, &(SDL_Rect){u2, u3, u6, u4});
+        SDL_RenderFillRect(renderer, &(SDL_Rect){u6, u4, u4, u2});
+    }
+
+    SDL_SetRenderTarget(renderer, target);
+    SDL_RenderCopy(renderer, letter_texture, NULL, &c_dest);
+
+    // Draw R
+    SDL_SetRenderTarget(renderer, letter_texture);
+    SDL_SetRenderDrawColor(renderer, PALETTE_CLEAR.r, PALETTE_CLEAR.g, PALETTE_CLEAR.b, PALETTE_CLEAR.a);
+    SDL_RenderClear(renderer);
+
+    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+    SDL_RenderFillRect(renderer, &(SDL_Rect){0, 0, u2, uh});
+    SDL_RenderFillRect(renderer, &(SDL_Rect){0, 0, u7, u6});
+    SDL_RenderCopy(renderer, positive_circle, NULL, &(SDL_Rect){ u4,  0, u6, u6});
+
+    SDL_Vertex r_geometry[4] = { 
+        {{ (float)u5, (float)u4}, color},
+        {{ (float)u7, (float)u4}, color},
+        {{ (float)u8, (float)uh}, color},
+        {{ (float)uw, (float)uh}, color},
+    };
+    int r_indices[6] = { 0, 1, 2, 1, 2, 3 };
+    SDL_RenderGeometry(renderer, NULL, r_geometry, 4, r_indices, 6);
+
+    SDL_RenderCopy(renderer, negative_circle, NULL, &(SDL_Rect){u6, u2, u2, u2});
+    SDL_SetRenderDrawColor(renderer, PALETTE_CLEAR.r, PALETTE_CLEAR.g, PALETTE_CLEAR.b, PALETTE_CLEAR.a);
+    SDL_RenderFillRect(renderer, &(SDL_Rect){u2, u2, u5, u2});
+
+    SDL_SetRenderTarget(renderer, target);
+    SDL_RenderCopy(renderer, letter_texture, NULL, &r_dest);
+
+    // Cleanup Textures
+    SDL_DestroyTexture(positive_circle);
+    SDL_DestroyTexture(negative_circle);
+    SDL_DestroyTexture(letter_texture);
+    SDL_SetRenderTarget(renderer, NULL);
+
+    return target;
 }
 
 SDL_Texture *create_pause_bar_glyph(SDL_Renderer *renderer, int tex_width, int tex_height, bool active) {
