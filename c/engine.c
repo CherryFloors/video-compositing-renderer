@@ -50,13 +50,13 @@ int init_vcr_application(VcrApplication *vcr_app) {
         return 1;
     }
 
-    vcr_app->font_digital_clock_7seg = TTF_OpenFont("/usr/share/fonts/truetype/dseg/DSEG7ModernMini-Italic.ttf", 48);
+    vcr_app->font_digital_clock_7seg = TTF_OpenFont("/usr/share/fonts/truetype/dseg/DSEG7ModernMini-Italic.ttf", 48);  // TODO(cf): Font size scale and embedd
     if (!vcr_app->font_digital_clock_7seg) {
         printf("Failed to open clock font\n");
         return 1;
     }
 
-    vcr_app->font_default = TTF_OpenFont("/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf", 20);
+    vcr_app->font_default = TTF_OpenFont("/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf", 20);  // TODO(cf): Font size scale and embedd
     if (!vcr_app->font_default) {
         printf("Failed to open default font\n");
         return 1;
@@ -108,23 +108,6 @@ void destroy_vcr_application(VcrApplication *vcr_app) {
     SDL_Quit();
 }
 
-void render_visual_static(VcrApplication *vcr_app, SDL_Rect screen) {
-    SDL_Texture *static_texture = SDL_CreateTexture(vcr_app->renderer, SDL_PIXELFORMAT_RGBA8888,
-                                                    SDL_TEXTUREACCESS_STATIC, screen.w, screen.h);
-
-    Uint32 pixels[screen.w * screen.h];
-    for (int y = 0; y < screen.h; ++y) {
-        for (int x = 0; x < screen.w; ++x) {
-            Uint8 noise = (Uint8)rand();
-            pixels[y * screen.w + x] = (noise << 24) | (noise << 16) | (noise << 8) | 0xff; // RGBA
-        }
-    }
-
-    SDL_UpdateTexture(static_texture, NULL, pixels, sizeof(Uint32) * screen.w);
-    SDL_RenderCopy(vcr_app->renderer, static_texture, NULL, &screen);
-    SDL_DestroyTexture(static_texture);
-}
-
 void render_videoscreen_shadow(VcrApplication *vcr_app, SDL_Rect screen) {
 
     SDL_Rect shadow = screen;
@@ -150,18 +133,21 @@ void render_videoscreen_shadow(VcrApplication *vcr_app, SDL_Rect screen) {
     SDL_RenderFillRect(vcr_app->renderer, &screen);
 }
 
-void standby_screen(VcrApplication *vcr_app, VcrColorPalette colors, bool clear) {
+void standby_screen(VcrApplication *vcr_app, VcrColorPalette colors, bool clear) {  // TODO(cf): This belongs in assets... I think.
     SDL_SetRenderDrawColor(vcr_app->renderer, colors.text_fg.r, colors.text_fg.g, colors.text_fg.b, 255);
     SDL_RenderClear(vcr_app->renderer);
 
-    int padding = 190;
-    int bar_height = (480 - padding * 2) / 5;
+    int window_width, window_height;
+    SDL_GetWindowSize(vcr_app->window, &window_width, &window_height);
 
-    SDL_Rect r0 = {0, padding + (bar_height * 0), 640, bar_height};
-    SDL_Rect r1 = {0, padding + (bar_height * 1), 640, bar_height};
-    SDL_Rect r2 = {0, padding + (bar_height * 2), 640, bar_height};
-    SDL_Rect r3 = {0, padding + (bar_height * 3), 640, bar_height};
-    SDL_Rect r4 = {0, padding + (bar_height * 4), 640, bar_height};
+    int padding = 190 * (RES_SD_H / window_height); 
+    int bar_height = (window_height - padding * 2) / 5;
+
+    SDL_Rect r0 = {0, padding + (bar_height * 0), window_width, bar_height};
+    SDL_Rect r1 = {0, padding + (bar_height * 1), window_width, bar_height};
+    SDL_Rect r2 = {0, padding + (bar_height * 2), window_width, bar_height};
+    SDL_Rect r3 = {0, padding + (bar_height * 3), window_width, bar_height};
+    SDL_Rect r4 = {0, padding + (bar_height * 4), window_width, bar_height};
 
     SDL_SetRenderDrawColor(vcr_app->renderer, colors.c0.r, colors.c0.g, colors.c0.b, 255);
     SDL_RenderFillRect(vcr_app->renderer, &r0);
@@ -256,7 +242,7 @@ VcrEvent process_sdl_event(VcrApplication *vcr_app, SDL_Event *event) {
             processed_event = process_key_stroke(vcr_app, event->key.keysym);
             break;
         default:
-            // processed_event = process_default_sdl_events(vcr_app, event);
+            processed_event = process_default_sdl_events(vcr_app, event);
             break;
     }
     return processed_event;
@@ -289,7 +275,7 @@ VcrEvent engine_routine_fullscreen_video(VcrApplication *vcr_app, VcrProgram *pr
             //     mpv_event_log_message *msg = ev->data;
             //     printf("log: %s", msg->text);
             // }
-            return 1;
+            return VCR_EVENT_QUIT;  // TODO(cf): Do I need an error event? Maybe?
         }
         
         vcr_event = process_sdl_event(vcr_app, &sdl_event);
@@ -318,6 +304,8 @@ int start_engine(VcrProgrammingQueue *vcr_programming_queue) {
     VcrApplication vcr_app;
     if (init_vcr_application(&vcr_app) != 0) {
         printf("Failed to init vcr display\n");
+        destroy_vcr_application(&vcr_app); // TODO(cf): should I call this in init_vcr_app? Maybe?
+        return 1;
     }
 
     const int TARGET_FPS = 24;
@@ -342,7 +330,7 @@ int start_engine(VcrProgrammingQueue *vcr_programming_queue) {
 
         int frame_start = SDL_GetTicks();
         SDL_Event sdl_event;
-        VcrEvent vcr_event;
+        VcrEvent vcr_event = VCR_EVENT_NONE;
 
         while (SDL_PollEvent(&sdl_event)) {
 

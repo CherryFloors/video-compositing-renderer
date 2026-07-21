@@ -1,14 +1,14 @@
 #pragma once
 #include "vcr_programming_queue.h"
 
-const int RES_SD_W = 640;
-const int RES_SD_H = 480;
-const int RES_FHD_W = 1920;
-const int RES_FHD_H = 1080;
+static const int RES_SD_W = 640;
+static const int RES_SD_H = 480;
+static const int RES_FHD_W = 1920;
+static const int RES_FHD_H = 1080;
 
 typedef enum DisplayResolution {
-    RESOULUTION_SD_640_480,
-    RESOULUTION_FHD_1920_1080,
+    RESOLUTION_SD_640_480,
+    RESOLUTION_FHD_1920_1080,
 } DisplayResolution;
 
 typedef enum VcrEvent {
