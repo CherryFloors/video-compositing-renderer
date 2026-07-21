@@ -49,7 +49,7 @@ int destroy_video_player(VideoPlayerContext *video_player);
 int render_video_frame(VideoPlayerContext *video_player, SDL_Renderer *renderer, SDL_Rect *screen_location);
 int render_video_static(VideoPlayerContext *video_player, SDL_Renderer *renderer, SDL_Rect *screen_location);
 int resize_screen(VideoPlayerContext *video_player_context, SDL_Renderer *renderer, int w, int h);
-int play_file(VideoPlayerContext *video_player, char *file);
+int play_file(VideoPlayerContext *video_player, const char *file);
 
 #ifdef VIDEO_PLAYER_IMPLEMENTATION
 
@@ -82,7 +82,7 @@ int init_video_player(VideoPlayerContext *video_player_context, SDL_Renderer *re
         return 1;
     }
 
-    mpv_request_log_messages(video_player_context->mpv, "debug");
+    mpv_request_log_messages(video_player_context->mpv, "no");  // "debug" for more messages
 
     mpv_render_param render_params[] = {
         {MPV_RENDER_PARAM_API_TYPE, MPV_RENDER_API_TYPE_SW},
@@ -144,7 +144,7 @@ int init_video_player(VideoPlayerContext *video_player_context, SDL_Renderer *re
     );
     if (!video_player_context->screen) {
         printf("could not allocate texture\n");
-        exit(1);
+        return 1;
     }
 
     video_player_context->screen_width = w;
@@ -174,7 +174,7 @@ int resize_screen(VideoPlayerContext *video_player_context, SDL_Renderer *render
 
     if (!video_player_context->screen) {
         printf("could not allocate texture\n");
-        exit(1);
+        return 1;
     }
 
     video_player_context->screen_width = w;
@@ -211,7 +211,7 @@ int render_video_frame(VideoPlayerContext *video_player, SDL_Renderer *renderer,
     SDL_QueryTexture(video_player->screen, NULL, NULL, &w, &h);
     if (SDL_LockTexture(video_player->screen, NULL, &pixels, &pitch)) {
         printf("could not lock texture\n");
-        exit(1);
+        return 1;
     }
     mpv_render_param params[] = {
         {MPV_RENDER_PARAM_SW_SIZE, (int[2]){w, h}},
@@ -223,16 +223,16 @@ int render_video_frame(VideoPlayerContext *video_player, SDL_Renderer *renderer,
     int r = mpv_render_context_render(video_player->mpv_render, params);
     if (r < 0) {
         printf("mpv_render_context_render error: %s\n", mpv_error_string(r));
-        exit(1);
+        return 1;
     }
     SDL_UnlockTexture(video_player->screen);
     SDL_RenderCopy(renderer, video_player->screen, NULL, screen_location);
-    SDL_RenderPresent(renderer);
+    SDL_RenderPresent(renderer);  // TODO(cf): Should I defer this call to the caller?
 
     return r;
 };
 
-int play_file(VideoPlayerContext *video_player, char *file) {
+int play_file(VideoPlayerContext *video_player, const char *file) {
     const char *cmd[] = {"loadfile", file, NULL};
     return mpv_command_async(video_player->mpv, 0, cmd);
 }

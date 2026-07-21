@@ -221,7 +221,7 @@ VcrEvent process_default_sdl_events(VcrApplication *vcr_app, SDL_Event *event) {
 
     VcrEvent default_event = VCR_EVENT_NONE;
     if (event->type == vcr_app->video_player.event_wakeup_on_mpv_render_update) {
-        render_video_frame(&vcr_app->video_player, vcr_app->renderer, &vcr_app->video_screen);
+        render_video_frame(&vcr_app->video_player, vcr_app->renderer, &vcr_app->video_screen);  // TODO(cf): handle bad render?
     }
 
     if (event->type == vcr_app->video_player.event_wakeup_on_mpv_events) {
