@@ -7,7 +7,7 @@
 #define VIDEO_PLAYER_IMPLEMENTATION
 #include "vcr_programming_queue.h"
 #include "engine.h"
-#include "engine.c"
+#include "engine.c"  // TODO(cf): dont include the c file
 
 VcrProgrammingQueue vcr_programming_queue;
 
@@ -34,11 +34,12 @@ static PyObject *_enqueue_program(PyObject *self, PyObject *args) {
     }
 
     strncpy(program.url, program_url, MAX_STRING_LENGTH);
+    program.url[MAX_STRING_LENGTH] = '\0';
     return PyLong_FromLong(enqueue(&vcr_programming_queue, &program));
 }
 
-static PyObject *open_display_window(PyObject *self, PyObject *args) { 
-    return PyLong_FromLong(start_engine(&vcr_programming_queue));
+static PyObject *open_display_window(PyObject *self, PyObject *args) {  // TODO(cf): rename and wrap in libvcr.py when threading strategy sorted
+    return PyLong_FromLong(start_engine(&vcr_programming_queue));  // TODO(cf): Need to release GIL and start thread.
 }
 
 #ifdef DEBUG
