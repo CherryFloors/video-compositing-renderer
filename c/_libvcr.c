@@ -12,12 +12,12 @@
 VcrProgrammingQueue vcr_programming_queue;
 
 static PyObject *_queue_count(PyObject *self, PyObject *args) {
-    return PyLong_FromLong(vcr_programming_queue.buffer_length);
+    return PyLong_FromLong(queue_count(&vcr_programming_queue));
 }
 
 static PyObject *_clear_queue(PyObject *self, PyObject *args) {
     initialize_queue(&vcr_programming_queue);
-    return PyLong_FromLong(vcr_programming_queue.buffer_length);
+    return PyLong_FromLong(queue_count(&vcr_programming_queue));
 }
 
 static PyObject *_enqueue_program(PyObject *self, PyObject *args) {
@@ -29,7 +29,7 @@ static PyObject *_enqueue_program(PyObject *self, PyObject *args) {
         return NULL;
     }
 
-    if (strlen(program_url) >= MAX_STRING_LENGTH) {
+    if (strlen(program_url) > MAX_STRING_LENGTH) {
         return PyLong_FromLong(FAIL_URL_LENGTH);
     }
 

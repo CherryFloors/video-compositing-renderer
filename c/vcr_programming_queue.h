@@ -21,9 +21,8 @@ typedef struct VcrProgram {
 // Defining the Queue structure
 typedef struct VcrProgrammingQueue {
     VcrProgram buffer[BUFFER_SIZE];
-    int buffer_length;
-    int read_index;
-    int write_index;
+    _Atomic int read_index;
+    _Atomic int write_index;
 } VcrProgrammingQueue;
 
 void safe_copy_program(VcrProgram *dest, VcrProgram *src);
@@ -32,13 +31,9 @@ void safe_copy_program(VcrProgram *dest, VcrProgram *src);
  */
 void initialize_queue(VcrProgrammingQueue *queue);
 /*
- * Function to check if the queue is empty
+ * Function to get the queue count. Not atomic.
  */
-bool is_empty(VcrProgrammingQueue *queue);
-/*
- * Function to check if the queue is full
- */
-bool is_full(VcrProgrammingQueue *queue);
+int queue_count(VcrProgrammingQueue *queue);
 /*
  * Enqueues the given void* element at the back of this Queue.
  * Returns true on success and false on enq failure when element is NULL or
@@ -53,42 +48,56 @@ bool dequeue(VcrProgrammingQueue *queue, VcrProgram *program_p);
 
 #ifdef VCR_PROGRAMMING_QUEUE_IMPLEMENTATION
 
-void safe_copy_program(VcrProgram *dest, VcrProgram *src) { strncpy(dest->url, src->url, MAX_STRING_LENGTH); }
+void safe_copy_program(VcrProgram *dest, VcrProgram *src) {
+    strncpy(dest->url, src->url, MAX_STRING_LENGTH); 
+    dest->url[MAX_STRING_LENGTH] = '\0';
+}
 
 void initialize_queue(VcrProgrammingQueue *queue) {
-    queue->buffer_length = 0;
     queue->read_index = 0;
     queue->write_index = 0;
 }
 
-bool is_empty(VcrProgrammingQueue *queue) { return queue->buffer_length == 0; }
+int queue_count(VcrProgrammingQueue *queue) {
 
-bool is_full(VcrProgrammingQueue *queue) { return queue->buffer_length == BUFFER_SIZE; }
+    int write_head = atomic_load_explicit(&queue->write_index, memory_order_acquire);
+    int read_head = atomic_load_explicit(&queue->read_index, memory_order_acquire);
+
+    if (write_head >= read_head) {
+        return write_head - read_head;
+    }
+    
+    return BUFFER_SIZE - read_head - write_head;
+}
 
 EnqueueCode enqueue(VcrProgrammingQueue *queue, VcrProgram *program) {
-    if (is_full(queue)) {
-        return FAIL_QUEUE_FULL;
-    }
 
     if (strlen(program->url) > MAX_STRING_LENGTH) {
         return FAIL_URL_LENGTH;
     }
 
-    safe_copy_program(&queue->buffer[queue->write_index], program);
-    queue->write_index = (queue->write_index + 1) % BUFFER_SIZE;
-    queue->buffer_length++;
+    int write_head = atomic_load_explicit(&queue->write_index, memory_order_relaxed);
+    int next_write_head = (write_head + 1) % BUFFER_SIZE;
+
+    if (next_write_head == atomic_load_explicit(&queue->read_index, memory_order_acquire)) {
+        return FAIL_QUEUE_FULL;
+    }
+
+    safe_copy_program(&queue->buffer[write_head], program);
+    atomic_store_explicit(&queue->write_index, next_write_head, memory_order_release);
 
     return SUCCESS;
 }
 
 bool dequeue(VcrProgrammingQueue *queue, VcrProgram *program) {
-    if (is_empty(queue)) {
+
+    int read_head = atomic_load_explicit(&queue->read_index, memory_order_relaxed);
+    if (read_head == atomic_load_explicit(&queue->write_index, memory_order_acquire)) {
         return false;
     }
 
-    safe_copy_program(program, &queue->buffer[queue->read_index]);
-    queue->read_index = (queue->read_index + 1) % BUFFER_SIZE;
-    queue->buffer_length--;
+    safe_copy_program(program, &queue->buffer[read_head]);
+    atomic_store_explicit(&queue->read_index, (read_head + 1) % BUFFER_SIZE, memory_order_release);
 
     return true;
 };

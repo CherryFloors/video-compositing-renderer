@@ -345,9 +345,8 @@ int start_engine(VcrProgrammingQueue *vcr_programming_queue) {
             break;
         }
 
-        if (!is_empty(vcr_programming_queue)) {
-            VcrProgram vcr_program;
-            dequeue(vcr_programming_queue, &vcr_program);
+        VcrProgram vcr_program;
+        if (dequeue(vcr_programming_queue, &vcr_program)) {
             vcr_event = engine_routine_fullscreen_video(&vcr_app, &vcr_program);
         }
 
