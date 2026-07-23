@@ -5,6 +5,7 @@ from vcr.libvcr import EnqueueCode, Program, enqueue_program, queue_count, clear
 
 
 MAX_QUEUE_COUNT = 99  # Buffer size - 1 (algo leaves one open slot when full)
+MAX_STRING_SIZE = 512
 
 
 class TestCLibVcr:
@@ -37,7 +38,7 @@ class TestCLibVcr:
             else:
                 assert url == ""
 
-        long_string = "a" * 512
+        long_string = "a" * (MAX_STRING_SIZE + 1)
         long_queue_code = _enqueue_program(long_string)
         assert long_queue_code == 2
 
@@ -48,9 +49,18 @@ class TestCLibVcr:
 
         second_real_queue_code = _enqueue_program(real_url)
         assert second_real_queue_code == 0
+
         assert _queue_count() == 1
         assert _clear_queue() == 0
         assert _queue_count() == 0
+
+        max_string = "a" * MAX_STRING_SIZE
+        max_queue_code = enqueue_program(Program(max_string))
+        assert max_queue_code == 0
+
+        assert queue_count() == 1
+        assert clear_queue() == 0
+        assert queue_count() == 0
 
 
 class TestLibVcr:
@@ -84,13 +94,21 @@ class TestLibVcr:
 
         assert queue_count() == 0
 
-        long_string = "a" * 512
+        long_string = "a" * (MAX_STRING_SIZE + 1)
         long_queue_code = enqueue_program(Program(long_string))
         assert long_queue_code == EnqueueCode.FAIL_URL_LENGTH
 
         real_url = "http://127.0.0.1:8000/Items/4b8e6c1a-7449-4864-9c76-5cac9e1d6565/Download?api_key=super-real-api-key-92kjc093kj43dk943"
         real_queue_code = enqueue_program(Program(real_url))
         assert real_queue_code == EnqueueCode.SUCCESS
+
+        assert queue_count() == 1
+        assert clear_queue() == 0
+        assert queue_count() == 0
+
+        max_string = "a" * MAX_STRING_SIZE
+        max_queue_code = enqueue_program(Program(max_string))
+        assert max_queue_code == EnqueueCode.SUCCESS
 
         assert queue_count() == 1
         assert clear_queue() == 0

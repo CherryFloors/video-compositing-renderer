@@ -73,7 +73,7 @@ int init_vcr_application(VcrApplication *vcr_app) {
     vcr_app->video_screen = (SDL_Rect){50, 50, 320, 240};
 
     vcr_app->window = SDL_CreateWindow("VCR", window_x_pos, window_y_pos, RES_SD_W, RES_SD_H, SDL_WINDOW_BORDERLESS);
-    vcr_app->renderer = SDL_CreateRenderer(vcr_app->window, -1, SDL_RENDERER_SOFTWARE);
+    vcr_app->renderer = SDL_CreateRenderer(vcr_app->window, -1, SDL_RENDERER_SOFTWARE);  // TODO(cf): Look into accelerated renderers SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
     vcr_app->digital_display = create_digital_display(vcr_app->renderer, vcr_app->font_digital_clock_7seg, vcr_app->font_default);
 
     vcr_app->digital_display->container.x = 150;
@@ -301,7 +301,7 @@ VcrEvent engine_routine_fullscreen_video(VcrApplication *vcr_app, VcrProgram *pr
 
 int start_engine(VcrProgrammingQueue *vcr_programming_queue) {
 
-    VcrApplication vcr_app;
+    VcrApplication vcr_app = {0};
     if (init_vcr_application(&vcr_app) != 0) {
         printf("Failed to init vcr display\n");
         destroy_vcr_application(&vcr_app); // TODO(cf): should I call this in init_vcr_app? Maybe?

@@ -185,19 +185,33 @@ int resize_screen(VideoPlayerContext *video_player_context, SDL_Renderer *render
 
 int render_video_static(VideoPlayerContext *video_player, SDL_Renderer *renderer, SDL_Rect *screen_location) {
 
-    int screen_width, screen_heigth;
-    SDL_QueryTexture(video_player->screen, NULL, NULL, &screen_width, &screen_heigth);
+    void *pixels = NULL;
+    int screen_width, screen_heigth, pitch;
 
-    Uint32 pixels[screen_width * screen_heigth];
+    SDL_QueryTexture(video_player->screen, NULL, NULL, &screen_width, &screen_heigth);
+    if (SDL_LockTexture(video_player->screen, NULL, &pixels, &pitch) != 0) {
+        printf("Unable to lock video screen texture to draw static\n");
+        return 1;
+    }
+
+    if ((pitch / 4) != screen_width) {
+        printf("Unable to lock video screen texture to draw static\n");
+        SDL_UnlockTexture(pixels);
+        return 1;
+    }
+
+    Uint32 *canvas_pixels = (Uint32*)pixels;
     for (int y = 0; y < screen_heigth; ++y) {
         for (int x = 0; x < screen_width; ++x) {
             Uint8 noise = (Uint8)rand();
-            pixels[y * screen_width + x] = (noise << 24) | (noise << 16) | (noise << 8) | 0xff; // RGBA
+            canvas_pixels[y * screen_width + x] = (noise << 24) | (noise << 16) | (noise << 8) | 0xff; // RGBA
         }
     }
 
     SDL_UpdateTexture(video_player->screen, NULL, pixels, sizeof(Uint32) * screen_width);
     SDL_RenderCopy(renderer, video_player->screen, NULL, screen_location);
+
+    SDL_UnlockTexture(video_player->screen);
 
     return 0;
 }
@@ -227,7 +241,7 @@ int render_video_frame(VideoPlayerContext *video_player, SDL_Renderer *renderer,
     }
     SDL_UnlockTexture(video_player->screen);
     SDL_RenderCopy(renderer, video_player->screen, NULL, screen_location);
-    SDL_RenderPresent(renderer);  // TODO(cf): Should I defer this call to the caller?
+    SDL_RenderPresent(renderer);  // TODO(cf): Should I defer this call to the caller? Yes? Do it.
 
     return r;
 };

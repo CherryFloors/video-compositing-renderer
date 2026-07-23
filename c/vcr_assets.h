@@ -1,5 +1,4 @@
 #pragma once
-#include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <math.h>
@@ -425,16 +424,17 @@ void set_clock_hour_and_am_pm_from_24_hour_fmt(int hour_24_fmt, DigitalDisplaySt
     digital_display_state->hour = hour;
 }
 
-bool update_digital_clock_and_check_for_redraw(DigitalDisplayState *digital_display_state) {
+bool update_digital_clock_and_check_for_redraw(DigitalDisplayState *digital_display_state) {  // TODO(cf): What you did here with set_clock.. and this... I dont like.
 
     bool redraw = false;
     time_t now = time(NULL);
     struct tm *current_time = localtime(&now);
-    int current_time_12_hour = current_time->tm_hour % 12;
 
-    if (current_time_12_hour != digital_display_state->hour) {
+    int display_state_hour_12_hour_time = digital_display_state->hour;
+    set_clock_hour_and_am_pm_from_24_hour_fmt(current_time->tm_hour, digital_display_state);
+
+    if (display_state_hour_12_hour_time != digital_display_state->hour) {
         redraw = true;
-        set_clock_hour_and_am_pm_from_24_hour_fmt(current_time->tm_hour, digital_display_state);
     }
 
     if (current_time->tm_min != digital_display_state->minute) {
