@@ -400,8 +400,11 @@ DigitalDisplay *create_digital_display(SDL_Renderer *renderer, TTF_Font *clock_f
 }
 
 void destroy_digital_display(DigitalDisplay *digital_display) {
-    SDL_DestroyTexture(digital_display->active);
-    SDL_DestroyTexture(digital_display->inactive);
+
+    if (digital_display) {
+        SDL_DestroyTexture(digital_display->active);
+        SDL_DestroyTexture(digital_display->inactive);
+    }
     free(digital_display);
 };
 

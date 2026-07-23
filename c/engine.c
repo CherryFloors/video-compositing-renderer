@@ -83,9 +83,7 @@ int init_vcr_application(VcrApplication *vcr_app) {
         0, 0, 3, false, false, true, false, false, false, false, false, false,
     };
 
-    init_video_player(&vcr_app->video_player, vcr_app->renderer, vcr_app->video_screen.w, vcr_app->video_screen.h);
-
-    return 0;
+    return init_video_player(&vcr_app->video_player, vcr_app->renderer, vcr_app->video_screen.w, vcr_app->video_screen.h);
 }
 
 

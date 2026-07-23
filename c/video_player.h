@@ -157,7 +157,9 @@ int destroy_video_player(VideoPlayerContext *video_player) {
 
     SDL_DestroyTexture(video_player->screen);
     mpv_render_context_free(video_player->mpv_render);
-    mpv_destroy(video_player->mpv);
+    if (video_player->mpv) {
+        mpv_destroy(video_player->mpv);
+    }
 
     return 0;
 }
@@ -196,7 +198,7 @@ int render_video_static(VideoPlayerContext *video_player, SDL_Renderer *renderer
 
     if ((pitch / 4) != screen_width) {
         printf("Unable to lock video screen texture to draw static\n");
-        SDL_UnlockTexture(pixels);
+        SDL_UnlockTexture(video_player->screen);
         return 1;
     }
 
@@ -208,10 +210,8 @@ int render_video_static(VideoPlayerContext *video_player, SDL_Renderer *renderer
         }
     }
 
-    SDL_UpdateTexture(video_player->screen, NULL, pixels, sizeof(Uint32) * screen_width);
-    SDL_RenderCopy(renderer, video_player->screen, NULL, screen_location);
-
     SDL_UnlockTexture(video_player->screen);
+    SDL_RenderCopy(renderer, video_player->screen, NULL, screen_location);
 
     return 0;
 }
