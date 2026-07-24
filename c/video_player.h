@@ -115,7 +115,7 @@ int init_video_player(VideoPlayerContext *video_player_context, SDL_Renderer *re
     // work as possible, and merely wake up another thread to do actual work.
     // On SDL, waking up the mainloop is the ideal course of action. SDL's
     // SDL_PushEvent() is thread-safe, so we use that.
-    wakeup_on_mpv_render_update = SDL_RegisterEvents(1);
+    wakeup_on_mpv_render_update = SDL_RegisterEvents(1);  // TODO(cf): Store right in struct and pass as ctx?
     wakeup_on_mpv_events = SDL_RegisterEvents(1);
     if (wakeup_on_mpv_render_update == (Uint32)-1 || wakeup_on_mpv_events == (Uint32)-1) {
         printf("could not register events\n");
@@ -128,7 +128,7 @@ int init_video_player(VideoPlayerContext *video_player_context, SDL_Renderer *re
     // TODO: play around with setting the render update cb parameter to the registered event.
     //
     // When normal mpv events are available.
-    mpv_set_wakeup_callback(video_player_context->mpv, on_mpv_events, NULL);
+    mpv_set_wakeup_callback(video_player_context->mpv, on_mpv_events, NULL);  // TODO(cf): ditch the file level uints and pass the pointer to the events stored in video_player_context
 
     // When there is a need to call mpv_render_context_update(), which can
     // request a new frame to be rendered.
@@ -235,11 +235,13 @@ int render_video_frame(VideoPlayerContext *video_player, SDL_Renderer *renderer,
         {0}
     };
     int r = mpv_render_context_render(video_player->mpv_render, params);
+    SDL_UnlockTexture(video_player->screen);
+
     if (r < 0) {
         printf("mpv_render_context_render error: %s\n", mpv_error_string(r));
         return 1;
     }
-    SDL_UnlockTexture(video_player->screen);
+
     SDL_RenderCopy(renderer, video_player->screen, NULL, screen_location);
     SDL_RenderPresent(renderer);  // TODO(cf): Should I defer this call to the caller? Yes? Do it.
 

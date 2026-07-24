@@ -292,7 +292,6 @@ VcrEvent engine_routine_fullscreen_video(VcrApplication *vcr_app, VcrProgram *pr
 
     }
 
-    printf("fullscreen loop end\n");
     resize_screen(&vcr_app->video_player, vcr_app->renderer, original_screen.w, original_screen.h);
     vcr_app->video_screen.x = original_screen.x;
     vcr_app->video_screen.y = original_screen.y;
