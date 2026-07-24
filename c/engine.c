@@ -76,6 +76,11 @@ int init_vcr_application(VcrApplication *vcr_app) {
     vcr_app->renderer = SDL_CreateRenderer(vcr_app->window, -1, SDL_RENDERER_SOFTWARE);  // TODO(cf): Look into accelerated renderers SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
     vcr_app->digital_display = create_digital_display(vcr_app->renderer, vcr_app->font_digital_clock_7seg, vcr_app->font_default);
 
+    if (!vcr_app->digital_display) {
+        printf("Failed create digital display\n");
+        return 1;
+    }
+
     vcr_app->digital_display->container.x = 150;
     vcr_app->digital_display->container.y = 300;
 
