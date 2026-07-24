@@ -62,6 +62,32 @@ class TestCLibVcr:
         assert clear_queue() == 0
         assert queue_count() == 0
 
+    @staticmethod
+    def test_queue_count() -> None:
+
+        assert _clear_queue() == 0
+        assert _queue_count() == 0
+
+        # Move write head 75 spots
+        for i in range(75):
+            queue_code = _enqueue_program(f"MOVIE: {i}")
+            assert queue_code == 0
+
+        assert queue_count() == 75
+
+        # Move read head 50 spots making room at beginning of ring buffer
+        for _ in range(50):
+            _ = _test_dequeue_program()
+
+        assert queue_count() == 25
+
+        # Move write head 50 spots rolling over back to start so write head < read head
+        for i in range(50):
+            queue_code = _enqueue_program(f"MOVIE: {i}")
+            assert queue_code == 0
+
+        assert queue_count() == 75
+
 
 class TestLibVcr:
     """Test the public libvcr module"""

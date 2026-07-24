@@ -67,7 +67,7 @@ int queue_count(VcrProgrammingQueue *queue) {
         return write_head - read_head;
     }
     
-    return BUFFER_SIZE - read_head - write_head;
+    return BUFFER_SIZE - read_head + write_head;
 }
 
 EnqueueCode enqueue(VcrProgrammingQueue *queue, VcrProgram *program) {
